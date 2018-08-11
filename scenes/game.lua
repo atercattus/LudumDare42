@@ -26,6 +26,8 @@ local enemies = {}
 local portals = {}
 local scoresText
 
+local aim
+
 local gameInPause = false
 
 local borderRadius = 800
@@ -52,6 +54,9 @@ end
 local function onMouseEvent(event)
     mousePos.x = event.x - W / 2
     mousePos.y = event.y - H / 2
+
+    aim.x = event.x
+    aim.y = event.y
 end
 
 local function setupBorder()
@@ -59,6 +64,13 @@ local function setupBorder()
     border:setFillColor(1, 1, 1, 0.3)
     border.strokeWidth = 30
     border:setStrokeColor(0.4, 0.8, 1)
+end
+
+local function setupAim(sceneGroup)
+    aim = display.newImageRect(sceneGroup, "data/aim.png", 32, 32)
+    aim.name = "aim"
+    aim.anchorX = 0.5
+    aim.anchorY = 0.5
 end
 
 local function setupScores(sceneGroup)
@@ -334,6 +346,8 @@ function scene:show(event)
         levelGroup.x = W / 2
         levelGroup.y = H / 2
         sceneGroup:insert(levelGroup)
+
+        setupAim(sceneGroup)
 
         setupScores(sceneGroup)
         updateScores()
