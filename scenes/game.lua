@@ -14,74 +14,19 @@ local distanceBetween = utils.distanceBetween
 local vector = utils.vector
 local hasCollidedCircle = utils.hasCollidedCircle
 
-local pressedKeys = {
-    mouseLeft = false,
-    left = false,
-    right = false,
-    top = false,
-    down = false,
-}
-local mousePos = {
-    x = 0,
-    y = 0,
-}
-
-local mouseScrollLastTime = 0
-
-local W, H
-local scene = composer.newScene()
-local levelGroup
+-- ===============
+-- КОНСТАНТЫ
+-- ===============
 
 local fontName = 'data/kitchen-police.regular.ttf' -- https://www.1001fonts.com/kitchen-police-font.html
 
-local border
-local player
-local enemies = {}
-local portals = {}
-local ammoInFlight = {}
-local ammoInCache = {}
-local ammoDrops = {}
-local enemyAmmoInFlight = {}
-local scoresText
-
-local portalsCreatedForAllTime = 0
-local totalScore = 0
-
-local playerHP = 10
-local playerInvulnBefore = 0
-
 local damageFromPortal = 3
 local damageFromBorder = 99999
-
-local aim
-
-local gameInPause = false
-
-local borderRadius = 800
-local borderRadiusSpeed = 50
-local playerSpeed = 400
-
-local enemyImageSheet
-
-local gunsCount
-local gunsImageSheet
-local ammoImageSheet
-local ammoBlocksImageSheet
-
-local enemyAmmoImageSheet
 
 local enemyAmmoWidth = 30
 local enemyAmmoHeight = 30
 
 local ammoIconScale = 2.5
-
-local ammoBlocksIcons = {}
-local ammoBlocksTexts = {}
-
-local heartIcon
-local heartIconText
-
-local ammoAllowed = {}
 
 local ammoWidth = 16
 local ammoHeight = 6
@@ -144,7 +89,7 @@ local enemyTypePortal = 0
 local enemyTypeSlow = 2 -- медленно идет на игрока
 local enemyTypeShooter = 1 -- старается держаться на расстоянии выстрела. и стреляет
 local enemyTypeGuard = 3 -- защитник портала. неуязвим, пока портал цел
-local enemyTypeFast = 4 -- бежит на игрока, и при контакте гибнет
+local enemyTypeFast = 4 -- бежит на игрока и при контакте гибнет
 local enemyTypeMaxValue = enemyTypeFast
 
 local enemyInfo = {
@@ -168,20 +113,18 @@ local enemyInfo = {
     },
 }
 
-local soundNoAmmo
-local soundLose
-local soundBoom
-local soundHit
-local soundHeart
-local soundExtension
-local soundGuns = {}
+-- ===============
+-- ДИНАМИКА
+-- ===============
 
-local function updateActiveGunInUI(currentGunType)
+local scene = composer.newScene()
+
+function scene:updateActiveGunInUI(currentGunType)
     if currentGunType == nil then
         currentGunType = gunTypePistol
     end
 
-    for gunType, text in ipairs(ammoBlocksTexts) do
+    for gunType, text in ipairs(self.ammoBlocksTexts) do
         if currentGunType == gunType then
             text:setFillColor(1, 1, 1)
             text.size = 52
@@ -192,30 +135,30 @@ local function updateActiveGunInUI(currentGunType)
     end
 end
 
-local function switchGun(num)
+function scene:switchGun(num)
     if num < gunTypePistol or num > gunTypeMaxValue then
         return
-    elseif gameInPause then
+    elseif self.gameInPause then
         return
     end
 
-    updateActiveGunInUI(num)
+    self:updateActiveGunInUI(num)
 
-    player.gun.gunType = num
-    player.gun.fill.frame = num
+    self.player.gun.gunType = num
+    self.player.gun.fill.frame = num
 end
 
-local function ammoGet(gunType)
+function scene:ammoGet(gunType)
     local ammo
-    if #ammoInCache > 0 then
-        ammo = ammoInCache[#ammoInCache]
-        table.remove(ammoInCache, #ammoInCache)
+    if #self.ammoInCache > 0 then
+        ammo = self.ammoInCache[#self.ammoInCache]
+        table.remove(self.ammoInCache, #self.ammoInCache)
         ammo.isVisible = true
     else
         ammo = display.newRect(0, 0, ammoWidth, ammoHeight)
-        levelGroup:insert(ammo)
+        self.levelGroup:insert(ammo)
         ammo.name = "ammo"
-        ammo.fill = { type = "image", sheet = ammoImageSheet, frame = gunType }
+        ammo.fill = { type = "image", sheet = self.ammoImageSheet, frame = gunType }
     end
 
     ammo.gunType = gunType
@@ -225,95 +168,95 @@ local function ammoGet(gunType)
     ammo.rotation = 0
     ammo.speed = gunsInfo.speeds[gunType]
 
-    ammoInFlight[#ammoInFlight + 1] = ammo
+    self.ammoInFlight[#self.ammoInFlight + 1] = ammo
 
     return ammo
 end
 
-local function ammoPut(ammo)
+function scene:ammoPut(ammo)
     ammo.isVisible = false
-    ammoInCache[#ammoInCache + 1] = ammo
+    self.ammoInCache[#self.ammoInCache + 1] = ammo
 end
 
-local function onKey(event)
+function scene:onKey(event)
     if event.phase == 'down' then
         if event.keyName == 'space' then -- ToDo: удалить из релиза
-            gameInPause = not gameInPause
+            self.gameInPause = not self.gameInPause
             return
         elseif "1" <= event.keyName and event.keyName <= "4" then
-            switchGun(tonumber(event.keyName))
+            self:switchGun(tonumber(event.keyName))
         end
     end
 
     if event.keyName == 'left' or event.keyName == 'a' then
-        pressedKeys.left = event.phase == 'down'
+        self.pressedKeys.left = event.phase == 'down'
     elseif event.keyName == 'right' or event.keyName == 'd' then
-        pressedKeys.right = event.phase == 'down'
+        self.pressedKeys.right = event.phase == 'down'
     elseif event.keyName == 'up' or event.keyName == 'w' then
-        pressedKeys.top = event.phase == 'down'
+        self.pressedKeys.top = event.phase == 'down'
     elseif event.keyName == 'down' or event.keyName == 's' then
-        pressedKeys.down = event.phase == 'down'
+        self.pressedKeys.down = event.phase == 'down'
     end
     return true
 end
 
-local function onMouseEvent(event)
-    mousePos.x = event.x - W / 2
-    mousePos.y = event.y - H / 2
+function scene:onMouseEvent(event)
+    self.mousePos.x = event.x - self.W / 2
+    self.mousePos.y = event.y - self.H / 2
 
     if event.scrollY ~= 0 then
         local currentTime = system.getTimer()
-        if mouseScrollLastTime + 100 < currentTime then
-            mouseScrollLastTime = currentTime
+        if self.mouseScrollLastTime + 100 < currentTime then
+            self.mouseScrollLastTime = currentTime
 
-            local nextGunType = player.gun.gunType + ((event.scrollY < 0) and -1 or 1)
-            switchGun(nextGunType)
+            local nextGunType = self.player.gun.gunType + ((event.scrollY < 0) and -1 or 1)
+            self:switchGun(nextGunType)
         end
     end
 
-    pressedKeys.mouseLeft = event.isPrimaryButtonDown
+    self.pressedKeys.mouseLeft = event.isPrimaryButtonDown
 
-    aim.x = event.x
-    aim.y = event.y
+    self.aim.x = event.x
+    self.aim.y = event.y
 end
 
-local function setupBorder()
-    border = display.newCircle(levelGroup, 0, 0, borderRadius)
-    border:setFillColor(1, 1, 1, 0.3)
-    border.strokeWidth = 30
-    border:setStrokeColor(0.4, 0.8, 1)
+function scene:setupBorder()
+    self.border = display.newCircle(self.levelGroup, 0, 0, self.borderRadius)
+    self.border:setFillColor(1, 1, 1, 0.3)
+    self.border.strokeWidth = 30
+    self.border:setStrokeColor(0.4, 0.8, 1)
 end
 
-local function setupAim(sceneGroup)
-    aim = display.newImageRect(sceneGroup, "data/aim.png", 32, 32)
-    aim.name = "aim"
-    aim.anchorX = 0.5
-    aim.anchorY = 0.5
+function scene:setupAim(sceneGroup)
+    self.aim = display.newImageRect(sceneGroup, "data/aim.png", 32, 32)
+    self.aim.name = "aim"
+    self.aim.anchorX = 0.5
+    self.aim.anchorY = 0.5
 end
 
-local function setupScores(sceneGroup)
-    scoresText = display.newText({
+function scene:setupScores(sceneGroup)
+    self.scoresText = display.newText({
         parent = sceneGroup,
         text = "",
-        width = W,
+        width = self.W,
         font = fontName,
         fontSize = 42,
         align = 'left',
     })
-    scoresText:setFillColor(1, 1, 0.4)
-    scoresText.anchorX = 0.5
-    scoresText.anchorY = 0
-    scoresText.x = W * 4 / 3 - 100
-    scoresText.y = 0
+    self.scoresText:setFillColor(1, 1, 0.4)
+    self.scoresText.anchorX = 0.5
+    self.scoresText.anchorY = 0
+    self.scoresText.x = self.W * 4 / 3 - 100
+    self.scoresText.y = 0
 end
 
-local function updateScores()
-    scoresText.text = "Radius: " .. round(borderRadius)
-            .. "\nPortals: " .. tostring(#portals)
-            .. "\nScore: " .. tostring(totalScore)
+function scene:updateScores()
+    self.scoresText.text = "Radius: " .. round(self.borderRadius)
+            .. "\nPortals: " .. tostring(#self.portals)
+            .. "\nScore: " .. tostring(self.totalScore)
 end
 
-local function isObjInsideBorder(obj, customSize)
+function scene:isObjInsideBorder(obj, customSize)
     local objSize
     if customSize == nil then
         objSize = sqrt(sqr(obj.width) + sqr(obj.height))
@@ -325,10 +268,10 @@ local function isObjInsideBorder(obj, customSize)
 
     local distanceFromCentre = sqrt(sqr(obj.x) + sqr(obj.y))
 
-    return (distanceFromCentre + (objSize / 2)) < borderRadius
+    return (distanceFromCentre + (objSize / 2)) < self.borderRadius
 end
 
-local function moveTo(obj, target, speed, deltaTime)
+function scene:moveTo(obj, target, speed, deltaTime)
     local vec = { x = target.x - obj.x, y = target.y - obj.y }
     local vecLen = vectorLen(vec)
 
@@ -346,7 +289,7 @@ local function moveTo(obj, target, speed, deltaTime)
     obj.y = obj.y + vec.y
 end
 
-local function calcMoveForwardPosition(obj, delta)
+function scene:calcMoveForwardPosition(obj, delta)
     local angle = math.rad(obj.rotation)
     local vec = { x = math.cos(angle), y = math.sin(angle) }
 
@@ -356,13 +299,13 @@ local function calcMoveForwardPosition(obj, delta)
     return { x = obj.x + vec.x, y = obj.y + vec.y }
 end
 
-local function moveForward(obj, delta)
-    local pos = calcMoveForwardPosition(obj, delta)
+function scene:moveForward(obj, delta)
+    local pos = self:calcMoveForwardPosition(obj, delta)
     obj.x = pos.x
     obj.y = pos.y
 end
 
-local function moveTowards(obj, target, delta)
+function scene:moveTowards(obj, target, delta)
     local vec = vector(obj.x, obj.y, target.x, target.y)
     local vecLen = vectorLen(vec)
     if vecLen == 0 then
@@ -373,49 +316,49 @@ local function moveTowards(obj, target, delta)
     obj.y = obj.y + delta * (vec.y / vecLen)
 end
 
-local function updateAmmoAllowed(gunType)
+function scene:updateAmmoAllowed(gunType)
     if gunType == gunTypePistol then
         return
     end
-    ammoBlocksTexts[gunType].text = tostring(ammoAllowed[gunType])
+    self.ammoBlocksTexts[gunType].text = tostring(self.ammoAllowed[gunType])
 end
 
-local function updateHeart()
-    heartIconText.text = tostring(playerHP)
+function scene:updateHeart()
+    self.heartIconText.text = tostring(self.playerHP)
 end
 
-local function shot()
-    local gunType = player.gun.gunType
+function scene:shot()
+    local gunType = self.player.gun.gunType
 
     local barrelLength = gunsInfo.barrelLengths[gunType]
 
     if gunType ~= gunTypePistol then
-        local cnt = ammoAllowed[gunType]
+        local cnt = self.ammoAllowed[gunType]
         if cnt == 0 then
             -- нечем стрелять
-            audio.play(soundNoAmmo)
+            audio.play(self.soundNoAmmo)
             return
         end
-        ammoAllowed[gunType] = cnt - 1
-        updateAmmoAllowed(gunType)
+        self.ammoAllowed[gunType] = cnt - 1
+        self:updateAmmoAllowed(gunType)
     end
 
-    audio.play(soundGuns[gunType])
+    audio.play(self.soundGuns[gunType])
 
-    local angle = player.gun.rotation
-    if player.xScale < 0 then
+    local angle = self.player.gun.rotation
+    if self.player.xScale < 0 then
         angle = -angle + 180
     end
 
-    if player.gun.gunType ~= gunTypeShotgun then
-        local ammo = ammoGet(gunType)
-        ammo.x = player.x
-        ammo.y = player.y
+    if self.player.gun.gunType ~= gunTypeShotgun then
+        local ammo = self:ammoGet(gunType)
+        ammo.x = self.player.x
+        ammo.y = self.player.y
 
         ammo.rotation = angle
         ammo.damage = gunsInfo.damages[gunType]
 
-        local pos = calcMoveForwardPosition(ammo, barrelLength)
+        local pos = self:calcMoveForwardPosition(ammo, barrelLength)
         ammo.x = pos.x
         ammo.y = pos.y
     else
@@ -428,82 +371,82 @@ local function shot()
         angle = angle - (sectorAngle / 2)
 
         for i = 1, shotsCnt do
-            local ammo = ammoGet(gunType)
-            ammo.x = player.x
-            ammo.y = player.y
+            local ammo = self:ammoGet(gunType)
+            ammo.x = self.player.x
+            ammo.y = self.player.y
 
             ammo.rotation = angle
             angle = angle + angleStep
 
             ammo.damage = gunsInfo.damages[gunType]
 
-            local pos = calcMoveForwardPosition(ammo, barrelLength)
+            local pos = self:calcMoveForwardPosition(ammo, barrelLength)
             ammo.x = pos.x
             ammo.y = pos.y
         end
     end
 end
 
-local function playerGotDamage(damage)
+function scene:playerGotDamage(damage)
     local currentTime = system.getTimer()
 
-    if playerInvulnBefore >= currentTime then
+    if self.playerInvulnBefore >= currentTime then
         return
     end
 
     -- даю игроку при получении урона неуязвимость на секунду
-    playerInvulnBefore = currentTime + 1000
+    self.playerInvulnBefore = currentTime + 1000
 
-    playerHP = math.max(0, playerHP - damage)
-    audio.play(soundHit)
-    updateHeart()
-    if playerHP == 0 then
-        audio.play(soundLose)
-        gameInPause = true
+    self.playerHP = math.max(0, self.playerHP - damage)
+    audio.play(self.soundHit)
+    self:updateHeart()
+    if self.playerHP == 0 then
+        audio.play(self.soundLose)
+        self.gameInPause = true
         composer.gotoScene('scenes.menu')
-        border:setStrokeColor(1, 0.3, 0.4)
+        self.border:setStrokeColor(1, 0.3, 0.4)
     end
 end
 
-local function updateBorderRadius(deltaTime)
-    borderRadius = borderRadius - borderRadiusSpeed * deltaTime
-    if borderRadius < 0 then
-        borderRadius = 0
+function scene:updateBorderRadius(deltaTime)
+    self.borderRadius = self.borderRadius - self.borderRadiusSpeed * deltaTime
+    if self.borderRadius < 0 then
+        self.borderRadius = 0
     end
-    border.path.radius = borderRadius
+    self.border.path.radius = self.borderRadius
 end
 
-local function setupPlayer()
+function scene:setupPlayer()
     local playerImage = display.newImageRect("data/man.png", 128, 128)
     playerImage.name = "player_image"
 
     local gun = display.newRect(0, 0, 140, 50)
     gun.name = "player_gun"
-    gun.fill = { type = "image", sheet = gunsImageSheet, frame = 1 }
+    gun.fill = { type = "image", sheet = self.gunsImageSheet, frame = 1 }
     gun.anchorX = 0.2
     gun.anchorY = 0.2
 
-    player = display.newGroup()
-    levelGroup:insert(player)
-    player.name = "player"
+    self.player = display.newGroup()
+    self.levelGroup:insert(self.player)
+    self.player.name = "player"
 
-    player:insert(playerImage)
-    player.playerImage = playerImage
-    player:insert(gun)
-    player.gun = gun
+    self.player:insert(playerImage)
+    self.player.playerImage = playerImage
+    self.player:insert(gun)
+    self.player.gun = gun
 
-    switchGun(gunTypePistol)
+    self:switchGun(gunTypePistol)
 end
 
-local function spawnPortal(first)
-    portalsCreatedForAllTime = portalsCreatedForAllTime + 1
+function scene:spawnPortal(first)
+    self.portalsCreatedForAllTime = self.portalsCreatedForAllTime + 1
 
-    local portal = display.newImageRect(levelGroup, "data/portal.png", 128, 128)
+    local portal = display.newImageRect(self.levelGroup, "data/portal.png", 128, 128)
     portal.name = "portal"
 
     portal.HP = portalHP
 
-    local radius = borderRadius * 0.8
+    local radius = self.borderRadius * 0.8
     if first then
         -- в первый раз создаем портал поближе. может, и всегда так будет :)
         radius = radius / 2
@@ -516,16 +459,16 @@ local function spawnPortal(first)
 
     portal.lastTimeEnemySpawn = 0
 
-    portals[#portals + 1] = portal
+    self.portals[#self.portals + 1] = portal
 
     return portal
 end
 
-local function getNewEnemyType(portal)
+function scene:getNewEnemyType(portal)
     local rand = 100 - randomInt(100)
     -- ToDo: увеличивать вероятность выпадения более сложных противников с развитием
 
-    if (portalsCreatedForAllTime > 3) and (not portal.guard) and (rand < 30) then
+    if (self.portalsCreatedForAllTime > 3) and (not portal.guard) and (rand < 30) then
         return enemyTypeGuard
     elseif rand < 10 then
         return enemyTypeShooter
@@ -536,11 +479,11 @@ local function getNewEnemyType(portal)
     end
 end
 
-local function spawnEnemy(portal)
-    local enemyType = getNewEnemyType(portal)
+function scene:spawnEnemy(portal)
+    local enemyType = self:getNewEnemyType(portal)
 
     local enemy = display.newRect(0, 0, 128, 128)
-    levelGroup:insert(enemy)
+    self.levelGroup:insert(enemy)
 
     enemy.HP = enemyInfo.HPs[enemyType]
 
@@ -555,7 +498,7 @@ local function spawnEnemy(portal)
     enemy.name = "enemy"
     enemy.enemyType = enemyType
 
-    enemy.fill = { type = "image", sheet = enemyImageSheet, frame = enemyType }
+    enemy.fill = { type = "image", sheet = self.enemyImageSheet, frame = enemyType }
     enemy.anchorX = 0.5
     enemy.anchorY = 0.5
 
@@ -563,36 +506,34 @@ local function spawnEnemy(portal)
     enemy.x = portal.x + randomInt(-1, 1) * 128
     enemy.y = portal.y + randomInt(-1, 1) * 128
 
-    enemies[#enemies + 1] = enemy
+    self.enemies[#self.enemies + 1] = enemy
 
     return enemy
 end
 
-local function updatePortal(portal, deltaTime)
+function scene:updatePortal(portal, deltaTime)
     local currentTime = system.getTimer()
     local delta = currentTime - portal.lastTimeEnemySpawn
     if delta > 1000 then -- ToDo: динамический период спавна
         portal.lastTimeEnemySpawn = currentTime
-        spawnEnemy(portal)
+        self:spawnEnemy(portal)
     end
-
-    -- ...
 end
 
-local function updatePortals(deltaTime)
-    for i, portal in ipairs(portals) do
-        if not isObjInsideBorder(portal) then
-            moveTo(portal, { x = 0, y = 0 }, borderRadiusSpeed, deltaTime)
+function scene:updatePortals(deltaTime)
+    for i, portal in ipairs(self.portals) do
+        if not self:isObjInsideBorder(portal) then
+            self:moveTo(portal, { x = 0, y = 0 }, self.borderRadiusSpeed, deltaTime)
         end
-        updatePortal(portal, deltaTime)
+        self:updatePortal(portal, deltaTime)
     end
 end
 
-local function enemyShotToPlayer(enemy)
+function scene:enemyShotToPlayer(enemy)
     local ammo = display.newRect(0, 0, enemyAmmoWidth, enemyAmmoHeight)
-    levelGroup:insert(ammo)
+    self.levelGroup:insert(ammo)
     ammo.name = "enemy_ammo"
-    ammo.fill = { type = "image", sheet = enemyAmmoImageSheet, frame = 1 }
+    ammo.fill = { type = "image", sheet = self.enemyAmmoImageSheet, frame = 1 }
 
     ammo.rotation = 0
     ammo.speed = enemyShooterShootSpeed
@@ -601,17 +542,17 @@ local function enemyShotToPlayer(enemy)
     ammo.x = enemy.x
     ammo.y = enemy.y
 
-    local vec = vector(enemy.x, enemy.y, player.x, player.y)
+    local vec = vector(enemy.x, enemy.y, self.player.x, self.player.y)
     ammo.rotation = 90 - vectorToAngle(vec)
 
-    local pos = calcMoveForwardPosition(ammo, 60) -- 60 для 128px выходит норм
+    local pos = self:calcMoveForwardPosition(ammo, 60) -- 60 для 128px выходит норм
     ammo.x = pos.x
     ammo.y = pos.y
 
-    enemyAmmoInFlight[#enemyAmmoInFlight + 1] = ammo
+    self.enemyAmmoInFlight[#self.enemyAmmoInFlight + 1] = ammo
 end
 
-local function updateEnemy(enemy, deltaTime)
+function scene:updateEnemy(enemy, deltaTime)
     local enemySpeed = enemyInfo.speeds[enemy.enemyType]
 
     if enemy.enemyType == enemyTypeGuard then
@@ -626,26 +567,26 @@ local function updateEnemy(enemy, deltaTime)
         local lastShotTime = enemy.lastShotTime or 0
         if lastShotTime + enemyShooterShootInterval < currentTime then
             enemy.lastShotTime = currentTime
-            enemyShotToPlayer(enemy)
+            self:enemyShotToPlayer(enemy)
         end
 
         -- Стрелки стараются держаться на расстоянии
 
         local deltaDist = enemySpeed * deltaTime
 
-        local toPlayerDist = distanceBetween(enemy, player)
+        local toPlayerDist = distanceBetween(enemy, self.player)
         local toCentreDist = vectorLen(enemy) + deltaDist
-        if (toPlayerDist < (enemyShooterDistance * enemy.distanceMult)) and (toCentreDist < borderRadius) then
+        if (toPlayerDist < (enemyShooterDistance * enemy.distanceMult)) and (toCentreDist < self.borderRadius) then
             -- отходит от игрока
-            moveTowards(enemy, { x = player.x, y = player.y }, -deltaDist)
+            self:moveTowards(enemy, { x = self.player.x, y = self.player.y }, -deltaDist)
             return
         end
     end
 
-    moveTo(enemy, { x = player.x, y = player.y }, enemySpeed, deltaTime)
+    self:moveTo(enemy, { x = self.player.x, y = self.player.y }, enemySpeed, deltaTime)
 end
 
-local function dropAmmo(enemyType, enemyObj)
+function scene:dropAmmo(enemyType, enemyObj)
     local gunType
     local ammoQuantity
     if enemyType == enemyTypePortal then
@@ -696,7 +637,7 @@ local function dropAmmo(enemyType, enemyObj)
     end
 
     if not gunType then
-        if (playerHP < 5) and (randomInt(100) >= 90) then
+        if (self.playerHP < 5) and (randomInt(100) >= 90) then
             -- иногда можно и сердечко выкинуть
             gunType = gunTypeDropHeart
             ammoQuantity = 1
@@ -711,56 +652,56 @@ local function dropAmmo(enemyType, enemyObj)
     local drop = display.newRect(0, 0,
         ammoBlockWidth * ammoIconScale,
         ammoBlockHeight * ammoIconScale)
-    levelGroup:insert(drop)
+    self.levelGroup:insert(drop)
 
     drop.gunType = gunType
     drop.quantity = ammoQuantity
 
-    drop.fill = { type = "image", sheet = ammoBlocksImageSheet, frame = gunType }
+    drop.fill = { type = "image", sheet = self.ammoBlocksImageSheet, frame = gunType }
     drop.x = enemyObj.x
     drop.y = enemyObj.y
     drop.anchorX = 0
     drop.anchorY = 0
 
-    ammoDrops[#ammoDrops + 1] = drop
+    self.ammoDrops[#self.ammoDrops + 1] = drop
 end
 
-local function enemyDied(enemyIdx, denyDropAmmo)
-    local enemy = enemies[enemyIdx]
+function scene:enemyDied(enemyIdx, denyDropAmmo)
+    local enemy = self.enemies[enemyIdx]
 
     if not denyDropAmmo then
-        dropAmmo(enemy.enemyType, enemy)
+        self:dropAmmo(enemy.enemyType, enemy)
     end
 
     enemy:removeSelf()
-    table.remove(enemies, enemyIdx)
+    table.remove(self.enemies, enemyIdx)
 
-    totalScore = totalScore + 1 -- пока на всех одинаково
+    self.totalScore = self.totalScore + 1 -- пока на всех одинаково
 end
 
-local function updateEnemies(deltaTime)
+function scene:updateEnemies(deltaTime)
     local to_delete = {}
 
-    for i, enemy in ipairs(enemies) do
-        if not isObjInsideBorder(enemy) then
+    for i, enemy in ipairs(self.enemies) do
+        if not self:isObjInsideBorder(enemy) then
             if enemy.enemyType == enemyTypeGuard then
                 -- Страж не гибнет от барьера, а как и портал движется с ним
-                moveTo(enemy, { x = 0, y = 0 }, borderRadiusSpeed, deltaTime)
+                self:moveTo(enemy, { x = 0, y = 0 }, self.borderRadiusSpeed, deltaTime)
             else
                 to_delete[#to_delete + 1] = i
             end
         else
-            updateEnemy(enemy, deltaTime)
+            self:updateEnemy(enemy, deltaTime)
         end
     end
 
     for i = #to_delete, 1, -1 do
-        enemyDied(to_delete[i])
+        self:enemyDied(to_delete[i])
     end
 end
 
-local function enemyGotDamage(enemyIdx, damage)
-    local enemy = enemies[enemyIdx]
+function scene:enemyGotDamage(enemyIdx, damage)
+    local enemy = self.enemies[enemyIdx]
 
     if enemy == nil then
         -- похоже что этого врага уже и так разорвало ракетницей
@@ -774,14 +715,14 @@ local function enemyGotDamage(enemyIdx, damage)
 
     local HP = enemy.HP - damage
     if HP <= 0 then
-        enemyDied(enemyIdx)
+        self:enemyDied(enemyIdx)
     else
         enemy.HP = HP
     end
 end
 
-local function getNewPortslsCount()
-    local cnt = portalsCreatedForAllTime
+function scene:getNewPortslsCount()
+    local cnt = self.portalsCreatedForAllTime
     if cnt <= 4 then -- первые два предполагаются учетными (с текстом на экране)
         return 1
     elseif cnt <= 7 then
@@ -797,48 +738,48 @@ local function getNewPortslsCount()
     end
 end
 
-local function portalDestroed(portalIdx)
-    local portal = portals[portalIdx]
+function scene:portalDestroed(portalIdx)
+    local portal = self.portals[portalIdx]
 
     if portal.guard then
         -- если у портала был Страж, то он тоже гибнет
-        for enemyIdx, enemy in ipairs(enemies) do
+        for enemyIdx, enemy in ipairs(self.enemies) do
             if enemy == portal.guard then
                 enemy.portal = nil
                 portal.guard = nil
-                enemyDied(enemyIdx)
+                self:enemyDied(enemyIdx)
                 break
             end
         end
     end
 
-    dropAmmo(enemyTypePortal, portal)
+    self:dropAmmo(enemyTypePortal, portal)
 
     portal:removeSelf()
-    table.remove(portals, portalIdx)
+    table.remove(self.portals, portalIdx)
 
-    totalScore = totalScore + 50
+    self.totalScore = self.totalScore + 50
 
-    playerSpeed = math.min(700, playerSpeed + 20)
+    self.playerSpeed = math.min(700, self.playerSpeed + 20)
 
-    borderRadius = borderRadius + 250
-    audio.play(soundExtension)
-    transition.to(border.path, {
+    self.borderRadius = self.borderRadius + 250
+    audio.play(self.soundExtension)
+    transition.to(self.border.path, {
         time = 1000,
-        radius = borderRadius,
+        radius = self.borderRadius,
         onComplete = function()
-            borderRadius = border.path.radius
+            self.borderRadius = self.border.path.radius
         end,
     })
 
-    local cntNew = getNewPortslsCount() - #portals
+    local cntNew = self:getNewPortslsCount() - #self.portals
     for i = 1, cntNew do
-        spawnPortal()
+        self:spawnPortal()
     end
 end
 
-local function portalGotDamage(portalIdx, damage)
-    local portal = portals[portalIdx]
+function scene:portalGotDamage(portalIdx, damage)
+    local portal = self.portals[portalIdx]
 
     if portal == nil then
         -- похоже что этот портал уже и так разорвало ракетницей
@@ -847,98 +788,98 @@ local function portalGotDamage(portalIdx, damage)
 
     local HP = portal.HP - damage
     if HP <= 0 then
-        portalDestroed(portalIdx)
+        self:portalDestroed(portalIdx)
     else
         portal.HP = HP
     end
 end
 
-local function getEnemyDamage(enemy)
+function scene:getEnemyDamage(enemy)
     return enemyInfo.damages[enemy.enemyType]
 end
 
-local function playerCheckCollisions()
-    if not isObjInsideBorder(player, player.playerImage.width * sqrt(2)) then
-        playerGotDamage(damageFromBorder)
+function scene:playerCheckCollisions()
+    if not self:isObjInsideBorder(self.player, self.player.playerImage.width * sqrt(2)) then
+        self:playerGotDamage(damageFromBorder)
         return
     end
 
-    for enemyIdx, enemy in ipairs(enemies) do
-        if hasCollidedCircle(player, enemy) then
-            playerGotDamage(getEnemyDamage(enemy))
+    for enemyIdx, enemy in ipairs(self.enemies) do
+        if hasCollidedCircle(self.player, enemy) then
+            self:playerGotDamage(self:getEnemyDamage(enemy))
             if enemy.enemyType == enemyTypeFast then
-                enemyDied(enemyIdx, true)
+                self:enemyDied(enemyIdx, true)
             end
             return
         end
     end
 
-    for i, portal in ipairs(portals) do
-        if hasCollidedCircle(player, portal) then
-            playerGotDamage(damageFromPortal)
+    for i, portal in ipairs(self.portals) do
+        if hasCollidedCircle(self.player, portal) then
+            self:playerGotDamage(damageFromPortal)
             return
         end
     end
 end
 
-local function updatePlayer(deltaTime)
+function scene:updatePlayer(deltaTime)
     local dX, dY = 0, 0
 
-    if pressedKeys.left or pressedKeys.right then
-        local dir = pressedKeys.left and -1 or 1
-        dX = dir * playerSpeed * deltaTime
+    if self.pressedKeys.left or self.pressedKeys.right then
+        local dir = self.pressedKeys.left and -1 or 1
+        dX = dir * self.playerSpeed * deltaTime
     end
-    if pressedKeys.top or pressedKeys.down then
-        local dir = pressedKeys.top and -1 or 1
-        dY = dir * playerSpeed * deltaTime
+    if self.pressedKeys.top or self.pressedKeys.down then
+        local dir = self.pressedKeys.top and -1 or 1
+        dY = dir * self.playerSpeed * deltaTime
     end
 
     -- перемещение игрока
-    player.x = player.x + dX
-    player.y = player.y + dY
+    self.player.x = self.player.x + dX
+    self.player.y = self.player.y + dY
 
     -- "камера" следует за игроком
-    levelGroup.x = levelGroup.x - dX
-    levelGroup.y = levelGroup.y - dY
+    self.levelGroup.x = self.levelGroup.x - dX
+    self.levelGroup.y = self.levelGroup.y - dY
 
     -- направление взгляда
-    local dir = (mousePos.x > 0) and 1 or -1
-    player.xScale = dir
+    local dir = (self.mousePos.x > 0) and 1 or -1
+    self.player.xScale = dir
 
     -- направление пушки
-    local vec = { x = mousePos.x, y = -mousePos.y }
+    local vec = { x = self.mousePos.x, y = -self.mousePos.y }
     if vec.y == 0 then
         return
     end
     local angle = vectorToAngle(vec)
 
-    if player.xScale < 0 then
+    if self.player.xScale < 0 then
         angle = 360 - angle
     end
-    player.gun.rotation = angle - 90
+    self.player.gun.rotation = angle - 90
 
     -- стрельба
-    if pressedKeys.mouseLeft then
+    if self.pressedKeys.mouseLeft then
         local currentTime = system.getTimer()
-        local delta = currentTime - gunsInfo.lastShots[player.gun.gunType]
-        if delta >= gunsInfo.shotIntervals[player.gun.gunType] then
-            gunsInfo.lastShots[player.gun.gunType] = currentTime
-            shot()
+        local delta = currentTime - gunsInfo.lastShots[self.player.gun.gunType]
+        if delta >= gunsInfo.shotIntervals[self.player.gun.gunType] then
+            gunsInfo.lastShots[self.player.gun.gunType] = currentTime
+            self:shot()
         end
     end
 
-    playerCheckCollisions()
+    self:playerCheckCollisions()
 end
 
-local function ammoCollideAnim(ammo)
+function scene:ammoCollideAnim(ammo)
     if ammo.gunType ~= gunTypeRocketLauncher then
         -- пока без всяких анимаций для оыбчных пушек
         return
     end
 
-    audio.play(soundBoom)
+    audio.play(self.soundBoom)
 
-    local r = display.newCircle(levelGroup, ammo.x, ammo.y, rocketDamageRadius)
+    local r = display.newCircle(self.levelGroup, ammo.x, ammo.y, rocketDamageRadius)
     r.fill = { 1, 0.4, 0.4, 0.3 }
     timer.performWithDelay(300, function()
         r:removeSelf()
@@ -946,7 +887,7 @@ local function ammoCollideAnim(ammo)
 
     -- нужно нанести урон всем противникам в области
     local to_delete = {}
-    for enemyIdx, enemy in ipairs(enemies) do
+    for enemyIdx, enemy in ipairs(self.enemies) do
         if distanceBetween(ammo, enemy) < rocketDamageRadius then
             to_delete[#to_delete + 1] = enemyIdx
         end
@@ -954,11 +895,11 @@ local function ammoCollideAnim(ammo)
 
     for i = #to_delete, 1, -1 do
         local enemyIdx = to_delete[i]
-        enemyGotDamage(enemyIdx, ammo.damage)
+        self:enemyGotDamage(enemyIdx, ammo.damage)
     end
 
     local to_delete = {}
-    for portalIdx, portal in ipairs(portals) do
+    for portalIdx, portal in ipairs(self.portals) do
         if distanceBetween(ammo, portal) < rocketDamageRadius then
             to_delete[#to_delete + 1] = portalIdx
         end
@@ -966,100 +907,100 @@ local function ammoCollideAnim(ammo)
 
     for i = #to_delete, 1, -1 do
         local enemyIdx = to_delete[i]
-        portalGotDamage(enemyIdx, ammo.damage)
+        self:portalGotDamage(enemyIdx, ammo.damage)
     end
 end
 
 -- updateAmmo вернет true, если пулю нужно удалять
-local function updateAmmo(ammo, deltaTime)
+function scene:updateAmmo(ammo, deltaTime)
     local collided = false
 
     local got_damage = {}
-    for enemyIdx, enemy in ipairs(enemies) do
+    for enemyIdx, enemy in ipairs(self.enemies) do
         if hasCollidedCircle(ammo, enemy) then
-            ammoCollideAnim(ammo) -- может удалять то, что было задано в got_damage
+            self:ammoCollideAnim(ammo) -- может удалять то, что было задано в got_damage
             got_damage[#got_damage + 1] = enemyIdx
             collided = true
         end
     end
     for i = #got_damage, 1, -1 do
         local enemyIdx = got_damage[i]
-        enemyGotDamage(enemyIdx, ammo.damage)
+        self:enemyGotDamage(enemyIdx, ammo.damage)
     end
 
     local got_damage = {}
-    for i, portal in ipairs(portals) do
+    for i, portal in ipairs(self.portals) do
         if hasCollidedCircle(ammo, portal) then
-            ammoCollideAnim(ammo) -- может удалять то, что было задано в got_damage
+            self:ammoCollideAnim(ammo) -- может удалять то, что было задано в got_damage
             got_damage[#got_damage + 1] = i
             collided = true
         end
     end
     for i = #got_damage, 1, -1 do
         local idx = got_damage[i]
-        portalGotDamage(idx, ammo.damage)
+        self:portalGotDamage(idx, ammo.damage)
     end
 
     if collided then
         return true
     end
 
-    moveForward(ammo, ammo.speed * deltaTime)
+    self:moveForward(ammo, ammo.speed * deltaTime)
 
     return false
 end
 
-local function updateAmmos(deltaTime)
+function scene:updateAmmos(deltaTime)
     -- Пули игрока
     local to_delete = {}
-    for i, ammo in ipairs(ammoInFlight) do
-        if not isObjInsideBorder(ammo) then
+    for i, ammo in ipairs(self.ammoInFlight) do
+        if not self:isObjInsideBorder(ammo) then
             to_delete[#to_delete + 1] = i
-        elseif updateAmmo(ammo, deltaTime) then
+        elseif self:updateAmmo(ammo, deltaTime) then
             -- Пуля с чем-то столкнулась, тоже удаляем
             to_delete[#to_delete + 1] = i
         end
     end
 
     for i = #to_delete, 1, -1 do
-        local ammo = ammoInFlight[to_delete[i]]
-        table.remove(ammoInFlight, to_delete[i])
-        ammoPut(ammo)
+        local ammo = self.ammoInFlight[to_delete[i]]
+        table.remove(self.ammoInFlight, to_delete[i])
+        self:ammoPut(ammo)
     end
 
     -- Пули врагов
     local to_delete = {}
-    for i, ammo in ipairs(enemyAmmoInFlight) do
-        if not isObjInsideBorder(ammo) then
+    for i, ammo in ipairs(self.enemyAmmoInFlight) do
+        if not self:isObjInsideBorder(ammo) then
             to_delete[#to_delete + 1] = i
-        elseif hasCollidedCircle(ammo, player) then
-            playerGotDamage(ammo.damage)
+        elseif hasCollidedCircle(ammo, self.player) then
+            self:playerGotDamage(ammo.damage)
             to_delete[#to_delete + 1] = i
         else
-            moveForward(ammo, ammo.speed * deltaTime)
+            self:moveForward(ammo, ammo.speed * deltaTime)
         end
     end
 
     for i = #to_delete, 1, -1 do
-        local ammo = enemyAmmoInFlight[to_delete[i]]
-        table.remove(enemyAmmoInFlight, to_delete[i])
+        local ammo = self.enemyAmmoInFlight[to_delete[i]]
+        table.remove(self.enemyAmmoInFlight, to_delete[i])
         ammo:removeSelf()
     end
 end
 
-local function updateAmmoDrops(deltaTime)
+function scene:updateAmmoDrops(deltaTime)
     local to_delete = {}
-    for i, drop in ipairs(ammoDrops) do
-        if not isObjInsideBorder(drop) then
+    for i, drop in ipairs(self.ammoDrops) do
+        if not self:isObjInsideBorder(drop) then
             to_delete[#to_delete + 1] = i
-        elseif hasCollidedCircle(player, drop) then
+        elseif hasCollidedCircle(self.player, drop) then
             if drop.gunType == gunTypeDropHeart then
-                audio.play(soundHeart)
-                playerHP = playerHP + drop.quantity
-                updateHeart()
+                audio.play(self.soundHeart)
+                self.playerHP = self.playerHP + drop.quantity
+                self:updateHeart()
             else
-                ammoAllowed[drop.gunType] = ammoAllowed[drop.gunType] + drop.quantity
-                updateAmmoAllowed(drop.gunType)
+                self.ammoAllowed[drop.gunType] = self.ammoAllowed[drop.gunType] + drop.quantity
+                self:updateAmmoAllowed(drop.gunType)
             end
             to_delete[#to_delete + 1] = i
         end
@@ -1067,47 +1008,47 @@ local function updateAmmoDrops(deltaTime)
 
     for i = #to_delete, 1, -1 do
         local dropIdx = to_delete[i]
-        ammoDrops[dropIdx]:removeSelf()
-        table.remove(ammoDrops, dropIdx)
+        self.ammoDrops[dropIdx]:removeSelf()
+        table.remove(self.ammoDrops, dropIdx)
     end
 end
 
-local function setupGunsAndAmmo(sceneGroup)
-    gunsCount = 4
+function scene:setupGunsAndAmmo(sceneGroup)
+    self.gunsCount = 4
     local options = {
         width = 140,
         height = 50,
-        numFrames = gunsCount,
+        numFrames = self.gunsCount,
     }
-    gunsImageSheet = graphics.newImageSheet("data/guns.png", options)
+    self.gunsImageSheet = graphics.newImageSheet("data/guns.png", options)
 
     local options = {
         width = ammoWidth,
         height = ammoHeight,
-        numFrames = gunsCount,
+        numFrames = self.gunsCount,
     }
-    ammoImageSheet = graphics.newImageSheet("data/ammo.png", options)
+    self.ammoImageSheet = graphics.newImageSheet("data/ammo.png", options)
 
-    for i = 1, gunsCount do
+    for i = 1, self.gunsCount do
         gunsInfo.lastShots[i] = 0
     end
 
     local options = {
         width = ammoBlockWidth,
         height = ammoBlockHeight,
-        numFrames = gunsCount + 1, -- +1 для сердечка
+        numFrames = self.gunsCount + 1, -- +1 для сердечка
     }
-    ammoBlocksImageSheet = graphics.newImageSheet("data/ammo_blocks.png", options)
+    self.ammoBlocksImageSheet = graphics.newImageSheet("data/ammo_blocks.png", options)
 
-    for gunType = 1, gunsCount do
-        ammoAllowed[gunType] = 0
+    for gunType = 1, self.gunsCount do
+        self.ammoAllowed[gunType] = 0
 
         local icon = display.newRect(0, 0,
             ammoBlockWidth * ammoIconScale,
             ammoBlockHeight * ammoIconScale)
         sceneGroup:insert(icon)
-        ammoBlocksIcons[gunType] = icon
-        icon.fill = { type = "image", sheet = ammoBlocksImageSheet, frame = gunType }
+        self.ammoBlocksIcons[gunType] = icon
+        icon.fill = { type = "image", sheet = self.ammoBlocksImageSheet, frame = gunType }
         icon.x = 10
         icon.y = 10 + (gunType - 1) * ammoBlockHeight * ammoIconScale
         icon.anchorX = 0
@@ -1116,7 +1057,7 @@ local function setupGunsAndAmmo(sceneGroup)
         local text = display.newText({
             parent = sceneGroup,
             text = (gunType == gunTypePistol) and "--" or "0",
-            width = W,
+            width = self.W,
             font = fontName,
             fontSize = 42,
             align = 'left',
@@ -1127,157 +1068,244 @@ local function setupGunsAndAmmo(sceneGroup)
         text.x = icon.x + icon.contentWidth + 10
         text.y = icon.y
 
-        ammoBlocksTexts[gunType] = text
+        self.ammoBlocksTexts[gunType] = text
 
-        updateAmmoAllowed(gunType)
+        self:updateAmmoAllowed(gunType)
     end
 end
 
-local function setupHeart(sceneGroup)
-    heartIcon = display.newRect(0, 0,
+function scene:setupHeart(sceneGroup)
+    self.heartIcon = display.newRect(0, 0,
         ammoBlockWidth * ammoIconScale,
         ammoBlockHeight * ammoIconScale)
-    sceneGroup:insert(heartIcon)
-    heartIcon.fill = { type = "image", sheet = ammoBlocksImageSheet, frame = gunsCount + 1 }
-    heartIcon.x = 10
-    heartIcon.y = 10 + gunsCount * ammoBlockHeight * ammoIconScale
-    heartIcon.anchorX = 0
-    heartIcon.anchorY = 0
+    sceneGroup:insert(self.heartIcon)
+    self.heartIcon.fill = { type = "image", sheet = self.ammoBlocksImageSheet, frame = self.gunsCount + 1 }
+    self.heartIcon.x = 10
+    self.heartIcon.y = 10 + self.gunsCount * ammoBlockHeight * ammoIconScale
+    self.heartIcon.anchorX = 0
+    self.heartIcon.anchorY = 0
 
-    heartIconText = display.newText({
+    self.heartIconText = display.newText({
         parent = sceneGroup,
         text = "0",
-        width = W,
+        width = self.W,
         font = fontName,
         fontSize = 42,
         align = 'left',
     })
-    heartIconText:setFillColor(1, 1, 0.4)
-    heartIconText.anchorX = 0
-    heartIconText.anchorY = 0
-    heartIconText.x = heartIcon.x + heartIcon.contentWidth + 10
-    heartIconText.y = heartIcon.y
+    self.heartIconText:setFillColor(1, 1, 0.4)
+    self.heartIconText.anchorX = 0
+    self.heartIconText.anchorY = 0
+    self.heartIconText.x = self.heartIcon.x + self.heartIcon.contentWidth + 10
+    self.heartIconText.y = self.heartIcon.y
 
-    updateHeart()
+    self:updateHeart()
 end
 
-local function setupEnemies()
+function scene:setupEnemies()
     local options = {
         width = 128,
         height = 128,
         numFrames = enemyTypeMaxValue,
     }
-    enemyImageSheet = graphics.newImageSheet("data/evil.png", options)
+    self.enemyImageSheet = graphics.newImageSheet("data/evil.png", options)
 end
 
-local function setupEnemyAmmo()
+function scene:setupEnemyAmmo()
     local options = {
         width = enemyAmmoWidth,
         height = enemyAmmoHeight,
         numFrames = 1,
     }
-    enemyAmmoImageSheet = graphics.newImageSheet("data/enemy_ammo.png", options)
+    self.enemyAmmoImageSheet = graphics.newImageSheet("data/enemy_ammo.png", options)
 end
 
-local lastEnterFrameTime
-local function onEnterFrame(event)
-    if (not lastEnterFrameTime) then
-        lastEnterFrameTime = system.getTimer()
+function scene:onEnterFrame(event)
+    if self.lastEnterFrameTime == 0 then
+        self.lastEnterFrameTime = system.getTimer()
         return
     end
-    local deltaTime = (event.time - lastEnterFrameTime) / 1000
-    lastEnterFrameTime = event.time
+    local deltaTime = (event.time - self.lastEnterFrameTime) / 1000
+    self.lastEnterFrameTime = event.time
     if deltaTime <= 0 then
         return
     end
 
-    if gameInPause then
+    if self.gameInPause then
         return
     end
 
-    updatePlayer(deltaTime)
-    updateBorderRadius(deltaTime)
-    updatePortals(deltaTime)
-    updateEnemies(deltaTime)
-    updateAmmos(deltaTime)
-    updateAmmoDrops(deltaTime)
+    self:updatePlayer(deltaTime)
+    self:updateBorderRadius(deltaTime)
+    self:updatePortals(deltaTime)
+    self:updateEnemies(deltaTime)
+    self:updateAmmos(deltaTime)
+    self:updateAmmoDrops(deltaTime)
 
-    updateScores()
+    self:updateScores()
 end
 
 -- ===========================================================================================
 
 function scene:create(event)
-    soundNoAmmo = audio.loadSound("data/no_ammo.wav")
-    soundLose = audio.loadSound("data/lose.wav")
-    soundBoom = audio.loadSound("data/boom.wav")
-    soundHit = audio.loadSound("data/hit.wav")
-    soundHeart = audio.loadSound("data/heart.wav")
-    soundExtension = audio.loadSound("data/extension.wav")
+    self.soundNoAmmo = audio.loadSound("data/no_ammo.wav")
+    self.soundLose = audio.loadSound("data/lose.wav")
+    self.soundBoom = audio.loadSound("data/boom.wav")
+    self.soundHit = audio.loadSound("data/hit.wav")
+    self.soundHeart = audio.loadSound("data/heart.wav")
+    self.soundExtension = audio.loadSound("data/extension.wav")
 
-    soundGuns[gunTypePistol] = audio.loadSound("data/pistol.wav")
-    soundGuns[gunTypeShotgun] = audio.loadSound("data/shotgun.wav")
-    soundGuns[gunTypeMachinegun] = audio.loadSound("data/shotgun.wav")
-    soundGuns[gunTypeRocketLauncher] = audio.loadSound("data/rocket.wav")
+    self.soundGuns = {}
+    self.soundGuns[gunTypePistol] = audio.loadSound("data/pistol.wav")
+    self.soundGuns[gunTypeShotgun] = audio.loadSound("data/shotgun.wav")
+    self.soundGuns[gunTypeMachinegun] = audio.loadSound("data/shotgun.wav")
+    self.soundGuns[gunTypeRocketLauncher] = audio.loadSound("data/rocket.wav")
 end
 
 function scene:destroy(event)
-    audio.dispose(soundNoAmmo)
-    audio.dispose(soundLose)
-    audio.dispose(soundBoom)
-    audio.dispose(soundHit)
-    audio.dispose(soundHeart)
-    audio.dispose(soundExtension)
+    audio.dispose(self.soundNoAmmo)
+    audio.dispose(self.soundLose)
+    audio.dispose(self.soundBoom)
+    audio.dispose(self.soundHit)
+    audio.dispose(self.soundHeart)
+    audio.dispose(self.soundExtension)
 
-    for _, sound in ipairs(soundGuns) do
+    for _, sound in ipairs(self.soundGuns) do
         audio.dispose(sound)
-    end
-end
-
-function scene:show(event)
-    local sceneGroup = self.view
-
-    if (event.phase == "will") then
-        W, H = display.contentWidth, display.contentHeight
-
-        levelGroup = display.newGroup()
-        levelGroup.x = W / 2
-        levelGroup.y = H / 2
-        sceneGroup:insert(levelGroup)
-
-        setupAim(sceneGroup)
-
-        setupScores(sceneGroup)
-        updateScores()
-
-        setupGunsAndAmmo(sceneGroup)
-
-        setupHeart(sceneGroup)
-
-        setupEnemies()
-        setupEnemyAmmo()
-
-        setupBorder()
-        setupPlayer()
-        spawnPortal(true)
-
-        Runtime:addEventListener("enterFrame", onEnterFrame)
-        Runtime:addEventListener("key", onKey)
-        Runtime:addEventListener("mouse", onMouseEvent)
-    end
-end
-
-function scene:hide(event)
-    if (event.phase == "did") then
-        Runtime:removeEventListener("enterFrame", onEnterFrame)
-        Runtime:removeEventListener("key", onKey)
-        Runtime:removeEventListener("mouse", onMouseEvent)
     end
 end
 
 scene:addEventListener("create", scene)
 scene:addEventListener("destroy", scene)
-scene:addEventListener("show", scene)
-scene:addEventListener("hide", scene)
+
+local function onEnterFrame(event)
+    scene:onEnterFrame(event)
+end
+
+local function onKey(event)
+    scene:onKey(event)
+end
+
+local function onMouseEvent(event)
+    scene:onMouseEvent(event)
+end
+
+function scene:reset()
+    local sceneGroup = scene.view
+
+    for i = sceneGroup.numChildren, 1, -1 do
+        sceneGroup[i]:removeSelf()
+    end
+
+    self.pressedKeys = {
+        mouseLeft = false,
+        left = false,
+        right = false,
+        top = false,
+        down = false,
+    }
+    self.mousePos = {
+        x = 0,
+        y = 0,
+    }
+
+    self.mouseScrollLastTime = 0
+
+    self.W, self.H = 0, 0
+
+    if self.levelGroup ~= nil then
+        self.levelGroup:removeSelf()
+    end
+    self.levelGroup = nil
+
+    if self.border ~= nil then
+        self.border:removeSelf()
+    end
+    self.border = nil
+    self.player = nil
+    self.enemies = {}
+    self.portals = {}
+    self.ammoInFlight = {}
+    self.ammoInCache = {}
+    self.ammoDrops = {}
+    self.enemyAmmoInFlight = {}
+    self.scoresText = nil
+
+    self.portalsCreatedForAllTime = 0
+    self.totalScore = 0
+
+    self.playerHP = 10
+    self.playerInvulnBefore = 0
+
+    self.aim = nil
+
+    self.gameInPause = false
+
+    self.borderRadius = 800
+    self.borderRadiusSpeed = 50
+    self.playerSpeed = 400
+
+    self.enemyImageSheet = nil
+
+    self.gunsCount = 0
+    self.gunsImageSheet = nil
+    self.ammoImageSheet = nil
+    self.ammoBlocksImageSheet = nil
+
+    self.enemyAmmoImageSheet = nil
+
+    self.ammoBlocksIcons = {}
+    self.ammoBlocksTexts = {}
+
+    self.heartIcon = nil
+    self.heartIconText = nil
+
+    self.ammoAllowed = {}
+
+    self.lastEnterFrameTime = 0
+end
+
+scene:addEventListener("show", function(event)
+    if (event.phase == "will") then
+        scene:reset()
+
+        local sceneGroup = scene.view
+
+        scene.W, scene.H = display.contentWidth, display.contentHeight
+
+        scene.levelGroup = display.newGroup()
+        scene.levelGroup.x = scene.W / 2
+        scene.levelGroup.y = scene.H / 2
+        sceneGroup:insert(scene.levelGroup)
+
+        scene:setupAim(sceneGroup)
+
+        scene:setupScores(sceneGroup)
+        scene:updateScores()
+
+        scene:setupGunsAndAmmo(sceneGroup)
+
+        scene:setupHeart(sceneGroup)
+
+        scene:setupEnemies()
+        scene:setupEnemyAmmo()
+
+        scene:setupBorder()
+        scene:setupPlayer()
+        scene:spawnPortal(true)
+
+        Runtime:addEventListener("enterFrame", onEnterFrame)
+        Runtime:addEventListener("key", onKey)
+        Runtime:addEventListener("mouse", onMouseEvent)
+    end
+end)
+
+scene:addEventListener("hide", function(event)
+    if (event.phase == "did") then
+        Runtime:removeEventListener("enterFrame", onEnterFrame)
+        Runtime:removeEventListener("key", onKey)
+        Runtime:removeEventListener("mouse", onMouseEvent)
+    end
+end)
 
 return scene
