@@ -68,8 +68,8 @@ local ammoBlocksImageSheet
 
 local enemyAmmoImageSheet
 
-local enemyAmmoWidth = 15
-local enemyAmmoHeight = 15
+local enemyAmmoWidth = 30
+local enemyAmmoHeight = 30
 
 local ammoIconScale = 2.5
 
@@ -992,8 +992,8 @@ end
 
 local function setupEnemyAmmo()
     local options = {
-        width = 16,
-        height = 16,
+        width = enemyAmmoWidth,
+        height = enemyAmmoHeight,
         numFrames = 1,
     }
     enemyAmmoImageSheet = graphics.newImageSheet("data/enemy_ammo.png", options)
