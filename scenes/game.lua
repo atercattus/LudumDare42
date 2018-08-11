@@ -484,7 +484,7 @@ function scene:spawnPortal(first)
     local radius = self.borderRadius * 0.8
     if first then
         -- в первый раз создаем портал поближе. может, и всегда так будет :)
-        radius = radius / 2
+        radius = radius / 1.15
     end
 
     local A = randomInt(360)
