@@ -38,6 +38,9 @@ local scoresText
 local portalsCreatedForAllTime = 0
 local totalScore = 0
 
+local playerHP = 200
+local playerInvulnBefore = 0
+
 local aim
 
 local gameInPause = false
@@ -194,6 +197,7 @@ local function updateScores()
     scoresText.text = "Radius: " .. round(borderRadius)
             .. " Portals: " .. tostring(#portals)
             .. " Score: " .. tostring(totalScore)
+            .. " HP: " .. tostring(playerHP)
 end
 
 local function isObjInsideBorder(obj, customSize)
@@ -263,50 +267,20 @@ local function shot()
     ammo.y = pos.y
 end
 
-local function updatePlayer(deltaTime)
-    local dX, dY = 0, 0
+local function playerGotDamage(damage)
+    local currentTime = system.getTimer()
 
-    if pressedKeys.left or pressedKeys.right then
-        local dir = pressedKeys.left and -1 or 1
-        dX = dir * playerSpeed * deltaTime
-    end
-    if pressedKeys.top or pressedKeys.down then
-        local dir = pressedKeys.top and -1 or 1
-        dY = dir * playerSpeed * deltaTime
-    end
-
-    -- перемещение игрока
-    player.x = player.x + dX
-    player.y = player.y + dY
-
-    -- "камера" следует за игроком
-    levelGroup.x = levelGroup.x - dX
-    levelGroup.y = levelGroup.y - dY
-
-    -- направление взгляда
-    local dir = (mousePos.x > 0) and 1 or -1
-    player.xScale = dir
-
-    -- направление пушки
-    local vec = { x = mousePos.x, y = -mousePos.y }
-    if vec.y == 0 then
+    if playerInvulnBefore >= currentTime then
         return
     end
-    local angle = vec2Angle(vec)
 
-    if player.xScale < 0 then
-        angle = 360 - angle
-    end
-    player.gun.rotation = angle - 90
+    -- даю игроку при получении урона неуязвимость на секунду
+    playerInvulnBefore = currentTime + 1000
 
-    -- стрельба
-    if pressedKeys.mouseLeft then
-        local currentTime = system.getTimer()
-        local delta = currentTime - gunsInfo.lastShots[player.gun.gunType]
-        if delta >= gunsInfo.shotIntervals[player.gun.gunType] then
-            gunsInfo.lastShots[player.gun.gunType] = currentTime
-            shot()
-        end
+    playerHP = math.max(0, playerHP - damage)
+    if playerHP == 0 then
+        gameInPause = true
+        border:setStrokeColor(1, 0.3, 0.4)
     end
 end
 
@@ -316,13 +290,6 @@ local function updateBorderRadius(deltaTime)
         borderRadius = 0
     end
     border.path.radius = borderRadius
-
-    updateScores()
-
-    if not isObjInsideBorder(player, player.playerImage.width * sqrt(2)) then
-        gameInPause = true
-        border:setStrokeColor(1, 0.3, 0.4)
-    end
 end
 
 local function setupPlayer()
@@ -473,6 +440,76 @@ local function portalGotDamage(portalIdx, damage)
     portalDestroed(portalIdx)
 end
 
+local function playerCheckCollisions()
+    if not isObjInsideBorder(player, player.playerImage.width * sqrt(2)) then
+        playerGotDamage(1000)
+        return
+    end
+
+    for i, enemy in ipairs(enemies) do
+        if hasCollidedCircle(player, enemy) then
+            playerGotDamage(1)
+            return
+        end
+    end
+
+    for i, portal in ipairs(portals) do
+        if hasCollidedCircle(player, portal) then
+            playerGotDamage(100)
+            return
+        end
+    end
+end
+
+local function updatePlayer(deltaTime)
+    local dX, dY = 0, 0
+
+    if pressedKeys.left or pressedKeys.right then
+        local dir = pressedKeys.left and -1 or 1
+        dX = dir * playerSpeed * deltaTime
+    end
+    if pressedKeys.top or pressedKeys.down then
+        local dir = pressedKeys.top and -1 or 1
+        dY = dir * playerSpeed * deltaTime
+    end
+
+    -- перемещение игрока
+    player.x = player.x + dX
+    player.y = player.y + dY
+
+    -- "камера" следует за игроком
+    levelGroup.x = levelGroup.x - dX
+    levelGroup.y = levelGroup.y - dY
+
+    -- направление взгляда
+    local dir = (mousePos.x > 0) and 1 or -1
+    player.xScale = dir
+
+    -- направление пушки
+    local vec = { x = mousePos.x, y = -mousePos.y }
+    if vec.y == 0 then
+        return
+    end
+    local angle = vec2Angle(vec)
+
+    if player.xScale < 0 then
+        angle = 360 - angle
+    end
+    player.gun.rotation = angle - 90
+
+    -- стрельба
+    if pressedKeys.mouseLeft then
+        local currentTime = system.getTimer()
+        local delta = currentTime - gunsInfo.lastShots[player.gun.gunType]
+        if delta >= gunsInfo.shotIntervals[player.gun.gunType] then
+            gunsInfo.lastShots[player.gun.gunType] = currentTime
+            shot()
+        end
+    end
+
+    playerCheckCollisions()
+end
+
 -- updateAmmo вернет true, если пулю нужно удалять
 local function updateAmmo(ammo, deltaTime)
     for i, enemy in ipairs(enemies) do
@@ -555,6 +592,8 @@ local function onEnterFrame(event)
     updatePortals(deltaTime)
     updateEnemies(deltaTime)
     updateAmmos(deltaTime)
+
+    updateScores()
 end
 
 -- ===========================================================================================
