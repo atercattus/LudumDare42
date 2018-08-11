@@ -250,21 +250,45 @@ local function moveForward(obj, delta)
 end
 
 local function shot()
-    local ammo = ammoGet(player.gun.gunType)
-    ammo.x = player.x
-    ammo.y = player.y
+    local barrelLength = gunsInfo.barrelLengths[player.gun.gunType]
 
     local angle = player.gun.rotation
     if player.xScale < 0 then
         angle = -angle + 180
     end
-    ammo.rotation = angle
 
-    local barrelLength = gunsInfo.barrelLengths[player.gun.gunType]
+    if player.gun.gunType ~= gunTypeShotgun then
+        local ammo = ammoGet(player.gun.gunType)
+        ammo.x = player.x
+        ammo.y = player.y
 
-    local pos = calcMoveForwardPosition(ammo, barrelLength)
-    ammo.x = pos.x
-    ammo.y = pos.y
+        ammo.rotation = angle
+
+        local pos = calcMoveForwardPosition(ammo, barrelLength)
+        ammo.x = pos.x
+        ammo.y = pos.y
+    else
+        -- шотган стреляет дробью
+
+        local sectorAngle = 30 -- сектор разброса дроби
+        local shotsCnt = 6 -- число дробинок
+        local angleStep = sectorAngle / (shotsCnt - 1)
+
+        angle = angle - (sectorAngle / 2)
+
+        for i = 1, shotsCnt do
+            local ammo = ammoGet(player.gun.gunType)
+            ammo.x = player.x
+            ammo.y = player.y
+
+            ammo.rotation = angle
+            angle = angle + angleStep
+
+            local pos = calcMoveForwardPosition(ammo, barrelLength)
+            ammo.x = pos.x
+            ammo.y = pos.y
+        end
+    end
 end
 
 local function playerGotDamage(damage)
