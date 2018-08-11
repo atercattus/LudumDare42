@@ -45,7 +45,7 @@ local aim
 
 local gameInPause = false
 
-local borderRadius = 1200
+local borderRadius = 800
 local borderRadiusSpeed = 50
 local playerSpeed = 400
 
