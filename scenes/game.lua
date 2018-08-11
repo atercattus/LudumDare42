@@ -105,14 +105,14 @@ local gunsInfo = {
         [gunTypePistol] = 150,
         [gunTypeShotgun] = 500,
         [gunTypeMachinegun] = 100,
-        [gunTypeRocketLauncher] = 900,
+        [gunTypeRocketLauncher] = 700,
     },
     -- скорости патронов из пушек
     speeds = {
         [gunTypePistol] = 1400,
         [gunTypeShotgun] = 1100,
         [gunTypeMachinegun] = 2500,
-        [gunTypeRocketLauncher] = 700,
+        [gunTypeRocketLauncher] = 1000,
     },
     -- расстояние от рукоятки до конца ствола (чтобы снаряд вылетал откуда надо)
     barrelLengths = {
