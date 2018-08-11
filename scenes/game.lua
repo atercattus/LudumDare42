@@ -1,13 +1,15 @@
 local composer = require("composer")
+local utils = require('utils')
 
 local round = math.round
 local sqrt = math.sqrt
 local tonumber = tonumber
 
-local randomInt = require('utils').randomInt
-local sqr = require('utils').sqr
-local vec2Angle = require('utils').vectorToAngle
-local vectorLen = require('utils').vectorLen
+local randomInt = utils.randomInt
+local sqr = utils.sqr
+local vec2Angle = utils.vectorToAngle
+local vectorLen = utils.vectorLen
+local hasCollidedCircle = utils.hasCollidedCircle
 
 local pressedKeys = {
     mouseLeft = false,
@@ -32,6 +34,9 @@ local portals = {}
 local ammoInFlight = {}
 local ammoInCache = {}
 local scoresText
+
+local portalsCreatedForAllTime = 0
+local totalScore = 0
 
 local aim
 
@@ -187,6 +192,8 @@ end
 
 local function updateScores()
     scoresText.text = "Radius: " .. round(borderRadius)
+            .. " Portals: " .. tostring(#portals)
+            .. " Score: " .. tostring(totalScore)
 end
 
 local function isObjInsideBorder(obj, customSize)
@@ -341,6 +348,8 @@ local function setupPlayer()
 end
 
 local function spawnPortal(first)
+    portalsCreatedForAllTime = portalsCreatedForAllTime + 1
+
     local portal = display.newImageRect(levelGroup, "data/portal.png", 128, 128)
     portal.name = "portal"
 
@@ -378,7 +387,7 @@ end
 local function updatePortal(portal, deltaTime)
     local currentTime = system.getTimer()
     local delta = currentTime - portal.lastTimeEnemySpawn
-    if delta > 2000 then
+    if delta > 1000 then -- ToDo: динамический период спавна
         portal.lastTimeEnemySpawn = currentTime
         spawnEnemy(portal)
     end
@@ -399,6 +408,14 @@ local function updateEnemy(enemy, deltaTime)
     moveTo(enemy, { x = player.x, y = player.y }, enemySpeed, deltaTime)
 end
 
+local function enemyDied(enemyIdx)
+    local enemy = enemies[enemyIdx]
+    enemy:removeSelf()
+    table.remove(enemies, enemyIdx)
+
+    totalScore = totalScore + 1 -- пока на всех одинаково
+end
+
 local function updateEnemies(deltaTime)
     local to_delete = {}
 
@@ -411,14 +428,70 @@ local function updateEnemies(deltaTime)
     end
 
     for i = #to_delete, 1, -1 do
-        local enemy = enemies[to_delete[i]]
-        enemy:removeSelf()
-        table.remove(enemies, to_delete[i])
+        enemyDied(to_delete[i])
     end
 end
 
+local function enemyGotDamage(enemyIdx, damage)
+    enemyDied(enemyIdx)
+end
+
+local function getNewPortslsCount()
+    local cnt = portalsCreatedForAllTime
+    if cnt <= 4 then -- первые два предполагаются учетными (с текстом на экране)
+        return 1
+    elseif cnt <= 7 then
+        return 2
+    elseif cnt <= 15 then
+        return 3
+    elseif cnt <= 20 then
+        return 4
+    elseif cnt <= 30 then
+        return 5
+    else
+        return 6
+    end
+end
+
+local function portalDestroed(portalIdx)
+    local portal = portals[portalIdx]
+    portal:removeSelf()
+    table.remove(portals, portalIdx)
+
+    totalScore = totalScore + 50
+
+    borderRadius = borderRadius + 250 -- ToDo: умножать, а не прибавлять
+    border.path.radius = borderRadius -- ToDo: анимация
+
+    local cntNew = getNewPortslsCount() - #portals
+    for i = 1, cntNew do
+        spawnPortal()
+    end
+end
+
+local function portalGotDamage(portalIdx, damage)
+    portalDestroed(portalIdx)
+end
+
+-- updateAmmo вернет true, если пулю нужно удалять
 local function updateAmmo(ammo, deltaTime)
+    for i, enemy in ipairs(enemies) do
+        if hasCollidedCircle(ammo, enemy) then
+            enemyGotDamage(i, 1)
+            return true
+        end
+    end
+
+    for i, portal in ipairs(portals) do
+        if hasCollidedCircle(ammo, portal) then
+            portalGotDamage(i, 1)
+            return true
+        end
+    end
+
     moveForward(ammo, ammo.speed * deltaTime)
+
+    return false
 end
 
 local function updateAmmos(deltaTime)
@@ -427,8 +500,9 @@ local function updateAmmos(deltaTime)
         -- ToDo: коллизии с порталами и врагами
         if not isObjInsideBorder(ammo) then
             to_delete[#to_delete + 1] = i
-        else
-            updateAmmo(ammo, deltaTime)
+        elseif updateAmmo(ammo, deltaTime) then
+            -- Пуля с чем-то столкнулась, тоже удаляем
+            to_delete[#to_delete + 1] = i
         end
     end
 
