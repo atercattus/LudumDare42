@@ -123,6 +123,7 @@ local enemyGuardMaxDistance = 200 -- максимальное расстояние, на которое Страж о
 local enemyShooterDistance = 500 -- расстояние, на котором стрелок старается держаться от игрока
 
 local enemyShooterShootInterval = 2000 -- как часто стрелок стреляет
+local enemyShooterShootSpeed = 400 -- скорость выстрелов стрелка
 
 local enemyTypePortal = 0
 local enemyTypeSlow = 2 -- медленно идет на игрока
@@ -469,10 +470,6 @@ local function getNewEnemyType(portal)
 end
 
 local function spawnEnemy(portal)
-    if #enemies > 0 then
-        return
-    end
-
     local enemyType = getNewEnemyType(portal)
 
     local enemy = display.newRect(0, 0, 128, 128)
@@ -529,7 +526,7 @@ local function enemyShotToPlayer(enemy)
     ammo.fill = { type = "image", sheet = enemyAmmoImageSheet, frame = 1 }
 
     ammo.rotation = 0
-    ammo.speed = 300
+    ammo.speed = enemyShooterShootSpeed
     ammo.damage = enemyInfo.damages[enemy.enemyType]
 
     ammo.x = enemy.x
