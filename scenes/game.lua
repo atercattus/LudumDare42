@@ -734,7 +734,7 @@ local function enemyGotDamage(enemyIdx, damage)
     local enemy = enemies[enemyIdx]
 
     if enemy == nil then
-        print("BUG in enemyGotDamage:", enemyIdx, damage)
+        -- похоже что этого врага уже и так разорвало ракетницей
         return
     end
 
@@ -803,6 +803,11 @@ end
 
 local function portalGotDamage(portalIdx, damage)
     local portal = portals[portalIdx]
+
+    if portal == nil then
+        -- похоже что этот портал уже и так разорвало ракетницей
+        return
+    end
 
     local HP = portal.HP - damage
     if HP <= 0 then
@@ -931,7 +936,7 @@ local function updateAmmo(ammo, deltaTime)
     local got_damage = {}
     for enemyIdx, enemy in ipairs(enemies) do
         if hasCollidedCircle(ammo, enemy) then
-            ammoCollideAnim(ammo)
+            ammoCollideAnim(ammo) -- может удалять то, что было задано в got_damage
             got_damage[#got_damage + 1] = enemyIdx
             collided = true
         end
@@ -944,7 +949,7 @@ local function updateAmmo(ammo, deltaTime)
     local got_damage = {}
     for i, portal in ipairs(portals) do
         if hasCollidedCircle(ammo, portal) then
-            ammoCollideAnim(ammo)
+            ammoCollideAnim(ammo) -- может удалять то, что было задано в got_damage
             got_damage[#got_damage + 1] = i
             collided = true
         end
