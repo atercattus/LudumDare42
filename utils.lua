@@ -18,6 +18,11 @@ function M.randomInt(from, to)
     end
 end
 
+function M.enabled(n)
+    local n = (n and (n > 2)) and n or 2
+    return math.random() < (1 / n)
+end
+
 function M.sqr(v)
     return v * v
 end

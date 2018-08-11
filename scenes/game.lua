@@ -6,6 +6,7 @@ local sqrt = math.sqrt
 local tonumber = tonumber
 
 local randomInt = utils.randomInt
+local enabled = utils.enabled
 local sqr = utils.sqr
 local vec2Angle = utils.vectorToAngle
 local vectorLen = utils.vectorLen
@@ -35,6 +36,7 @@ local enemies = {}
 local portals = {}
 local ammoInFlight = {}
 local ammoInCache = {}
+local ammoDrops = {}
 local scoresText
 
 local portalsCreatedForAllTime = 0
@@ -65,6 +67,9 @@ local ammoAllowed = {}
 
 local ammoWidth = 16
 local ammoHeight = 6
+
+local ammoBlockWidth = 18
+local ammoBlockHeight = 19
 
 local gunTypePistol = 1
 local gunTypeShotgun = 2
@@ -257,15 +262,27 @@ local function moveForward(obj, delta)
     obj.y = pos.y
 end
 
+local function updateAmmoAllowed(gunType)
+    if gunType == gunTypePistol then
+        return
+    end
+    ammoBlocksTexts[gunType].text = tostring(ammoAllowed[gunType])
+end
+
 local function shot()
     local gunType = player.gun.gunType
 
     local barrelLength = gunsInfo.barrelLengths[gunType]
 
-    if (gunType ~= gunTypePistol) and (ammoAllowed[gunType] == 0) then
-        -- нечем стрелять
-        -- ToDo: звук щелчка
-        return
+    if gunType ~= gunTypePistol then
+        local cnt = ammoAllowed[gunType]
+        if cnt == 0 then
+            -- нечем стрелять
+            -- ToDo: звук щелчка
+            return
+        end
+        ammoAllowed[gunType] = cnt - 1
+        updateAmmoAllowed(gunType)
     end
 
     local angle = player.gun.rotation
@@ -415,8 +432,38 @@ local function updateEnemy(enemy, deltaTime)
     moveTo(enemy, { x = player.x, y = player.y }, enemySpeed, deltaTime)
 end
 
+local function dropAmmo(enemy)
+--    if not enabled() then
+--        return
+--    end
+
+    local ammoIconScale = 3
+
+    local gunType = randomInt(gunTypePistol+1, gunTypeMaxValue)
+
+    local drop = display.newRect(0, 0,
+        ammoBlockWidth * ammoIconScale,
+        ammoBlockHeight * ammoIconScale
+    )
+    levelGroup:insert(drop)
+
+    drop.gunType = gunType
+    drop.quantity = 10
+
+    drop.fill = { type = "image", sheet = ammoBlocksImageSheet, frame = gunType }
+    drop.x = enemy.x
+    drop.y = enemy.y
+    drop.anchorX = 0
+    drop.anchorY = 0
+
+    ammoDrops[#ammoDrops+1] = drop
+end
+
 local function enemyDied(enemyIdx)
     local enemy = enemies[enemyIdx]
+
+    dropAmmo(enemy)
+
     enemy:removeSelf()
     table.remove(enemies, enemyIdx)
 
@@ -592,11 +639,23 @@ local function updateAmmos(deltaTime)
     end
 end
 
-local function updateAmmoAllowed(gunType)
-    if gunType == gunTypePistol then
-        return
+local function updateAmmoDrops(deltaTime)
+    local to_delete = {}
+    for i, drop in ipairs(ammoDrops) do
+        if not isObjInsideBorder(drop) then
+            to_delete[#to_delete+1] = i
+        elseif hasCollidedCircle(player, drop) then
+            ammoAllowed[drop.gunType] = ammoAllowed[drop.gunType] + drop.quantity
+            updateAmmoAllowed(drop.gunType)
+            to_delete[#to_delete+1] = i
+        end
     end
-    ammoBlocksTexts[gunType].text = tostring(ammoAllowed[gunType])
+
+    for i = #to_delete, 1, -1 do
+        local dropIdx = to_delete[i]
+        ammoDrops[dropIdx]:removeSelf()
+        table.remove(ammoDrops, dropIdx)
+    end
 end
 
 local function setupGunsAndAmmo(sceneGroup)
@@ -619,8 +678,6 @@ local function setupGunsAndAmmo(sceneGroup)
         gunsInfo.lastShots[i] = 0
     end
 
-    local ammoBlockWidth = 18
-    local ammoBlockHeight = 19
     local options = {
         width = ammoBlockWidth,
         height = ammoBlockHeight,
@@ -684,6 +741,7 @@ local function onEnterFrame(event)
     updatePortals(deltaTime)
     updateEnemies(deltaTime)
     updateAmmos(deltaTime)
+    updateAmmoDrops(deltaTime)
 
     updateScores()
 end
