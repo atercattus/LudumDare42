@@ -21,9 +21,13 @@ local enemies = {}
 local portals = {}
 local scoresText
 
+local gameInPause = false
+
 local borderRadius = 800
 local borderRadiusSpeed = 50
 local playerSpeed = 400
+
+local enemySpeed = 70 -- пока для всех одинаковая
 
 local function onKey(event)
     if event.keyName == 'left' or event.keyName == 'a' then
@@ -72,6 +76,24 @@ local function isObjInsideBorder(obj)
     return (distanceFromCentre + halfObjSize) < borderRadius
 end
 
+local function moveTo(obj, target, speed, deltaTime)
+    local vec = { x = target.x - obj.x, y = target.y - obj.y }
+    local vecLen = sqrt(sqr(vec.x) + sqr(vec.y))
+
+    local distance = speed * deltaTime
+    if vecLen < distance then
+        obj.x = target.x
+        obj.y = target.y
+        return
+    end
+
+    vec.x = vec.x / vecLen * distance
+    vec.y = vec.y / vecLen * distance
+
+    obj.x = obj.x + vec.x
+    obj.y = obj.y + vec.y
+end
+
 local function updatePlayer(deltaTime)
     local dX, dY = 0, 0
 
@@ -103,8 +125,7 @@ local function updateBorderRadius(deltaTime)
     updateScores()
 
     if not isObjInsideBorder(player) then
-        borderRadiusSpeed = 0
-        playerSpeed = 0
+        gameInPause = true
         border:setStrokeColor(1, 0.3, 0.4)
     end
 end
@@ -129,6 +150,8 @@ local function spawnPortal(first)
     portal.x = math.cos(angle) * radius
     portal.y = math.sin(angle) * radius
 
+    portal.lastTimeEnemySpawn = 0
+
     portals[#portals + 1] = portal
 
     return portal
@@ -138,8 +161,9 @@ local function spawnEnemy(portal)
     local enemy = display.newImageRect(levelGroup, "data/evil.png", 128, 128)
     enemy.name = "enemy"
 
-    enemy.x = portal.x + 128
-    enemy.y = portal.y
+    -- ToDo: нужно спавнить в сторону центра
+    enemy.x = portal.x + randomInt(-1, 1) * 128
+    enemy.y = portal.y + randomInt(-1, 1) * 128
 
     enemies[#enemies + 1] = enemy
 
@@ -147,23 +171,44 @@ local function spawnEnemy(portal)
 end
 
 local function updatePortal(portal, deltaTime)
+    local currentTime = system.getTimer()
+    local delta = currentTime - portal.lastTimeEnemySpawn
+    if delta > 2000 then
+        portal.lastTimeEnemySpawn = currentTime
+        spawnEnemy(portal)
+    end
+
     -- ...
 end
 
 local function updatePortals(deltaTime)
-    local to_delete = {}
     for i, portal in ipairs(portals) do
         if not isObjInsideBorder(portal) then
+            moveTo(portal, { x = 0, y = 0 }, borderRadiusSpeed, deltaTime)
+        end
+        updatePortal(portal, deltaTime)
+    end
+end
+
+local function updateEnemy(enemy, deltaTime)
+    moveTo(enemy, {x=player.x, y=player.y}, enemySpeed, deltaTime)
+end
+
+local function updateEnemies(deltaTime)
+    local to_delete = {}
+
+    for i, enemy in ipairs(enemies) do
+        if not isObjInsideBorder(enemy) then
             to_delete[#to_delete + 1] = i
         else
-            updatePortal(portal, deltaTime)
+            updateEnemy(enemy, deltaTime)
         end
     end
 
     for i = #to_delete, 1, -1 do
-        local portal = portals[to_delete[i]]
-        portal:removeSelf()
-        table.remove(portals, to_delete[i])
+        local enemy = enemies[to_delete[i]]
+        enemy:removeSelf()
+        table.remove(enemies, to_delete[i])
     end
 end
 
@@ -179,11 +224,14 @@ local function onEnterFrame(event)
         return
     end
 
+    if gameInPause then
+        return
+    end
+
     updatePlayer(deltaTime)
     updateBorderRadius(deltaTime)
     updatePortals(deltaTime)
-
-    -- ...
+    updateEnemies(deltaTime)
 end
 
 -- ===========================================================================================
@@ -203,8 +251,8 @@ function scene:show(event)
         W, H = display.contentWidth, display.contentHeight
 
         levelGroup = display.newGroup()
-        levelGroup.x = W/2
-        levelGroup.y = H/2
+        levelGroup.x = W / 2
+        levelGroup.y = H / 2
         sceneGroup:insert(levelGroup)
 
         setupScores(sceneGroup)
