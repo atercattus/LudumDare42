@@ -174,8 +174,10 @@ local function updateActiveGunInUI(currentGunType)
     for gunType, text in ipairs(ammoBlocksTexts) do
         if currentGunType == gunType then
             text:setFillColor(1, 1, 1)
+            text.size = 52
         else
             text:setFillColor(1, 1, 0.4)
+            text.size = 42
         end
     end
 end
