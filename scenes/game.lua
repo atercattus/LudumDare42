@@ -6,9 +6,11 @@ local tonumber = tonumber
 
 local randomInt = require('utils').randomInt
 local sqr = require('utils').sqr
-local vec2Angle = require('utils').vec2Angle
+local vec2Angle = require('utils').vectorToAngle
+local vectorLen = require('utils').vectorLen
 
 local pressedKeys = {
+    mouseLeft = false,
     left = false,
     right = false,
     top = false,
@@ -27,13 +29,15 @@ local border
 local player
 local enemies = {}
 local portals = {}
+local ammoInFlight = {}
+local ammoInCache = {}
 local scoresText
 
 local aim
 
 local gameInPause = false
 
-local borderRadius = 800
+local borderRadius = 1200
 local borderRadiusSpeed = 50
 local playerSpeed = 400
 
@@ -41,15 +45,75 @@ local enemySpeed = 70 -- пока для всех одинаковая
 
 local gunsCount
 local gunsImageSheet
+local ammoImageSheet
+
+local ammoWidth = 16
+local ammoHeight = 6
+
+local gunTypePistol = 1
+local gunTypeShotgun = 2
+local gunTypeMachinegun = 3
+local gunTypeRocketLauncher = 4
+local gunTypeMaxValue = gunTypeRocketLauncher
+
+local gunsInfo = {
+    -- время последнего выстрела из этой пушки (заполняется при инициализации)
+    lastShots = {},
+    -- интервалы между выстрелами каждой пушки
+    shotIntervals = {
+        [gunTypePistol] = 200,
+        [gunTypeShotgun] = 400,
+        [gunTypeMachinegun] = 100,
+        [gunTypeRocketLauncher] = 1000,
+    },
+    -- скорости патронов из пушек
+    speeds = {
+        [gunTypePistol] = 1400,
+        [gunTypeShotgun] = 1100,
+        [gunTypeMachinegun] = 2500,
+        [gunTypeRocketLauncher] = 500,
+    },
+}
 
 local function switchGun(num)
-    if num < 1 or num > gunsCount then
+    if num < gunTypePistol or num > gunTypeMaxValue then
         return
     elseif gameInPause then
         return
     end
 
+    player.gun.gunType = num
     player.gun.fill.frame = num
+end
+
+local function ammoGet(gunType)
+    local ammo
+    if #ammoInCache > 0 then
+        ammo = ammoInCache[#ammoInCache]
+        table.remove(ammoInCache, #ammoInCache)
+        ammo.isVisible = true
+    else
+        ammo = display.newRect(0, 0, ammoWidth, ammoHeight)
+        levelGroup:insert(ammo)
+        ammo.name = "ammo"
+        ammo.fill = { type = "image", sheet = ammoImageSheet, frame = gunType }
+    end
+
+    ammo.gunType = gunType
+    ammo.fill.frame = gunType
+    ammo.x = 0
+    ammo.y = 0
+    ammo.rotation = 0
+    ammo.speed = gunsInfo.speeds[gunType]
+
+    ammoInFlight[#ammoInFlight + 1] = ammo
+
+    return ammo
+end
+
+local function ammoPut(ammo)
+    ammo.isVisible = false
+    ammoInCache[#ammoInCache + 1] = ammo
 end
 
 local function onKey(event)
@@ -77,6 +141,8 @@ end
 local function onMouseEvent(event)
     mousePos.x = event.x - W / 2
     mousePos.y = event.y - H / 2
+
+    pressedKeys.mouseLeft = event.isPrimaryButtonDown
 
     aim.x = event.x
     aim.y = event.y
@@ -133,7 +199,7 @@ end
 
 local function moveTo(obj, target, speed, deltaTime)
     local vec = { x = target.x - obj.x, y = target.y - obj.y }
-    local vecLen = sqrt(sqr(vec.x) + sqr(vec.y))
+    local vecLen = vectorLen(vec)
 
     local distance = speed * deltaTime
     if vecLen < distance then
@@ -147,6 +213,29 @@ local function moveTo(obj, target, speed, deltaTime)
 
     obj.x = obj.x + vec.x
     obj.y = obj.y + vec.y
+end
+
+local function moveForward(obj, delta)
+    local angle = math.rad(obj.rotation)
+    local vec = { x = math.cos(angle), y = math.sin(angle) }
+
+    vec.x = vec.x * delta
+    vec.y = vec.y * delta
+
+    obj.x = obj.x + vec.x
+    obj.y = obj.y + vec.y
+end
+
+local function shot()
+    local ammo = ammoGet(player.gun.gunType)
+    ammo.x = player.x
+    ammo.y = player.y
+
+    local angle = player.gun.rotation
+    if player.xScale < 0 then
+        angle = -angle + 180
+    end
+    ammo.rotation = angle
 end
 
 local function updatePlayer(deltaTime)
@@ -184,6 +273,16 @@ local function updatePlayer(deltaTime)
         angle = 360 - angle
     end
     player.gun.rotation = angle - 90
+
+    -- стрельба
+    if pressedKeys.mouseLeft then
+        local currentTime = system.getTimer()
+        local delta = currentTime - gunsInfo.lastShots[player.gun.gunType]
+        if delta >= gunsInfo.shotIntervals[player.gun.gunType] then
+            gunsInfo.lastShots[player.gun.gunType] = currentTime
+            shot()
+        end
+    end
 end
 
 local function updateBorderRadius(deltaTime)
@@ -219,6 +318,8 @@ local function setupPlayer()
     player.playerImage = playerImage
     player:insert(gun)
     player.gun = gun
+
+    switchGun(gunTypePistol)
 end
 
 local function spawnPortal(first)
@@ -298,7 +399,30 @@ local function updateEnemies(deltaTime)
     end
 end
 
-local function setupGuns()
+local function updateAmmo(ammo, deltaTime)
+    moveForward(ammo, ammo.speed * deltaTime)
+end
+
+local function updateAmmos(deltaTime)
+    local to_delete = {}
+    for i, ammo in ipairs(ammoInFlight) do
+        -- ToDo: коллизии с порталами и врагами
+        if not isObjInsideBorder(ammo) then
+            to_delete[#to_delete + 1] = i
+        else
+            updateAmmo(ammo, deltaTime)
+        end
+    end
+
+    for i = #to_delete, 1, -1 do
+        local ammo = ammoInFlight[to_delete[i]]
+        --ammo:removeSelf()
+        table.remove(ammoInFlight, to_delete[i])
+        ammoPut(ammo)
+    end
+end
+
+local function setupGunsAndAmmo()
     gunsCount = 4
     local options = {
         width = 140,
@@ -306,6 +430,17 @@ local function setupGuns()
         numFrames = gunsCount,
     }
     gunsImageSheet = graphics.newImageSheet("data/guns.png", options)
+
+    local options = {
+        width = ammoWidth,
+        height = ammoHeight,
+        numFrames = gunsCount,
+    }
+    ammoImageSheet = graphics.newImageSheet("data/ammo.png", options)
+
+    for i = 1, gunsCount do
+        gunsInfo.lastShots[i] = 0
+    end
 end
 
 local lastEnterFrameTime
@@ -325,11 +460,10 @@ local function onEnterFrame(event)
     end
 
     updatePlayer(deltaTime)
-    if true then
-        updateBorderRadius(deltaTime)
-        updatePortals(deltaTime)
-        updateEnemies(deltaTime)
-    end
+    updateBorderRadius(deltaTime)
+    updatePortals(deltaTime)
+    updateEnemies(deltaTime)
+    updateAmmos(deltaTime)
 end
 
 -- ===========================================================================================
@@ -358,7 +492,7 @@ function scene:show(event)
         setupScores(sceneGroup)
         updateScores()
 
-        setupGuns()
+        setupGunsAndAmmo()
 
         setupBorder()
         setupPlayer()

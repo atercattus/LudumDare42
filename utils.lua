@@ -26,7 +26,7 @@ function M.vector(fromX, fromY, toX, toY)
     return { x = toX - fromX, y = toY - fromY }
 end
 
-function M.vec2Angle(vec)
+function M.vectorToAngle(vec)
     if vec.y == 0 then
         return 0
     end
@@ -39,6 +39,10 @@ function M.vec2Angle(vec)
     end
 
     return angle
+end
+
+function M.vectorLen(vec)
+    return math.sqrt(M.sqr(vec.x) + M.sqr(vec.y))
 end
 
 return M
