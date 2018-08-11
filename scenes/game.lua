@@ -27,6 +27,8 @@ local W, H
 local scene = composer.newScene()
 local levelGroup
 
+local fontName = 'data/kitchen-police.regular.ttf' -- https://www.1001fonts.com/kitchen-police-font.html
+
 local border
 local player
 local enemies = {}
@@ -54,6 +56,12 @@ local enemySpeed = 70 -- пока для всех одинаковая
 local gunsCount
 local gunsImageSheet
 local ammoImageSheet
+local ammoBlocksImageSheet
+
+local ammoBlocksIcons = {}
+local ammoBlocksTexts = {}
+
+local ammoAllowed = {}
 
 local ammoWidth = 16
 local ammoHeight = 6
@@ -182,22 +190,22 @@ local function setupScores(sceneGroup)
         parent = sceneGroup,
         text = "",
         width = W,
-        font = 'data/kitchen-police.regular.ttf', -- https://www.1001fonts.com/kitchen-police-font.html
+        font = fontName,
         fontSize = 42,
         align = 'left',
     })
     scoresText:setFillColor(1, 1, 0.4)
-    scoresText.anchorX = 0
+    scoresText.anchorX = 0.5
     scoresText.anchorY = 0
-    scoresText.x = 0
+    scoresText.x = W * 4 / 3 - 100
     scoresText.y = 0
 end
 
 local function updateScores()
     scoresText.text = "Radius: " .. round(borderRadius)
-            .. " Portals: " .. tostring(#portals)
-            .. " Score: " .. tostring(totalScore)
-            .. " HP: " .. tostring(playerHP)
+            .. "\nPortals: " .. tostring(#portals)
+            .. "\nScore: " .. tostring(totalScore)
+            .. "\nHP: " .. tostring(playerHP)
 end
 
 local function isObjInsideBorder(obj, customSize)
@@ -250,7 +258,15 @@ local function moveForward(obj, delta)
 end
 
 local function shot()
-    local barrelLength = gunsInfo.barrelLengths[player.gun.gunType]
+    local gunType = player.gun.gunType
+
+    local barrelLength = gunsInfo.barrelLengths[gunType]
+
+    if (gunType ~= gunTypePistol) and (ammoAllowed[gunType] == 0) then
+        -- нечем стрелять
+        -- ToDo: звук щелчка
+        return
+    end
 
     local angle = player.gun.rotation
     if player.xScale < 0 then
@@ -258,7 +274,7 @@ local function shot()
     end
 
     if player.gun.gunType ~= gunTypeShotgun then
-        local ammo = ammoGet(player.gun.gunType)
+        local ammo = ammoGet(gunType)
         ammo.x = player.x
         ammo.y = player.y
 
@@ -277,7 +293,7 @@ local function shot()
         angle = angle - (sectorAngle / 2)
 
         for i = 1, shotsCnt do
-            local ammo = ammoGet(player.gun.gunType)
+            local ammo = ammoGet(gunType)
             ammo.x = player.x
             ammo.y = player.y
 
@@ -576,7 +592,14 @@ local function updateAmmos(deltaTime)
     end
 end
 
-local function setupGunsAndAmmo()
+local function updateAmmoAllowed(gunType)
+    if gunType == gunTypePistol then
+        return
+    end
+    ammoBlocksTexts[gunType].text = tostring(ammoAllowed[gunType])
+end
+
+local function setupGunsAndAmmo(sceneGroup)
     gunsCount = 4
     local options = {
         width = 140,
@@ -594,6 +617,49 @@ local function setupGunsAndAmmo()
 
     for i = 1, gunsCount do
         gunsInfo.lastShots[i] = 0
+    end
+
+    local ammoBlockWidth = 18
+    local ammoBlockHeight = 19
+    local options = {
+        width = ammoBlockWidth,
+        height = ammoBlockHeight,
+        numFrames = gunsCount,
+    }
+    ammoBlocksImageSheet = graphics.newImageSheet("data/ammo_blocks.png", options)
+
+    local ammoIconScale = 2.5
+    for gunType = 1, gunsCount do
+        ammoAllowed[gunType] = 0
+
+        local icon = display.newRect(0, 0,
+            ammoBlockWidth * ammoIconScale,
+            ammoBlockHeight * ammoIconScale)
+        sceneGroup:insert(icon)
+        ammoBlocksIcons[gunType] = icon
+        icon.fill = { type = "image", sheet = ammoBlocksImageSheet, frame = gunType }
+        icon.x = 10
+        icon.y = 10 + (gunType - 1) * ammoBlockHeight * ammoIconScale
+        icon.anchorX = 0
+        icon.anchorY = 0
+
+        local text = display.newText({
+            parent = sceneGroup,
+            text = (gunType == gunTypePistol) and "--" or "42",
+            width = W,
+            font = fontName,
+            fontSize = 42,
+            align = 'left',
+        })
+        text:setFillColor(1, 1, 0.4)
+        text.anchorX = 0
+        text.anchorY = 0
+        text.x = icon.x + icon.contentWidth + 10
+        text.y = icon.y
+
+        ammoBlocksTexts[gunType] = text
+
+        updateAmmoAllowed(gunType)
     end
 end
 
@@ -648,7 +714,7 @@ function scene:show(event)
         setupScores(sceneGroup)
         updateScores()
 
-        setupGunsAndAmmo()
+        setupGunsAndAmmo(sceneGroup)
 
         setupBorder()
         setupPlayer()
