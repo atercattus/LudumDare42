@@ -12,12 +12,14 @@ local pressedKeys = {
 local W, H
 local scene = composer.newScene()
 local sceneGroup
+local levelGroup
 
 local border
 local player
 local enemies = {}
 local portals = {}
 
+local borderRadius = 450
 local playerSpeed = 400
 
 local function onKey(event)
@@ -47,19 +49,21 @@ local function onEnterFrame(event)
 
     if pressedKeys.left or pressedKeys.right then
         local dir = pressedKeys.left and -1 or 1
-        player.x = player.x + (dir * playerSpeed * deltaTime)
+        local dX = dir * playerSpeed * deltaTime
+        levelGroup.x = levelGroup.x - dX
     end
     if pressedKeys.top or pressedKeys.down then
         local dir = pressedKeys.top and -1 or 1
-        player.y = player.y + (dir * playerSpeed * deltaTime)
+        local dY = dir * playerSpeed * deltaTime
+        levelGroup.y = levelGroup.y - dY
     end
 
     -- ...
 end
 
 local function setupBorder()
-    border = display.newCircle(sceneGroup, W / 2, H / 2, 300)
-    border:setFillColor(1)
+    border = display.newCircle(levelGroup, W / 2, H / 2, borderRadius)
+    border:setFillColor(0, 0, 0, 0)
     border.strokeWidth = 30
     border:setStrokeColor(0.4, 0.8, 1)
 end
@@ -71,10 +75,9 @@ local function spawnPlayer()
 end
 
 local function spawnPortal()
-    --    local borderRadius = border.path.radius
     --    print("borderRadius", borderRadius)
 
-    local portal = display.newImageRect(sceneGroup, "data/portal.png", 128, 128)
+    local portal = display.newImageRect(levelGroup, "data/portal.png", 128, 128)
     portal.x = W / 2 + randomInt(-2, 2) * portal.width
     portal.y = H / 2 + randomInt(-2, 2) * portal.height
 
@@ -84,9 +87,9 @@ local function spawnPortal()
 end
 
 local function spawnEnemy(portal)
-    local enemy = display.newImageRect(sceneGroup, "data/evil.png", 128, 128)
-    enemy.x = randomInt(-2, 2) * portal.width
-    enemy.y = randomInt(-2, 2) * portal.height
+    local enemy = display.newImageRect(levelGroup, "data/evil.png", 128, 128)
+    enemy.x = portal.x + 128
+    enemy.y = portal.y
 
     enemies[#enemies + 1] = enemy
 
@@ -109,6 +112,9 @@ function scene:show(event)
     if (event.phase == "will") then
         W, H = display.contentWidth, display.contentHeight
 
+        levelGroup = display.newGroup()
+        sceneGroup:insert(levelGroup)
+
         setupBorder()
         spawnPlayer()
         local portal = spawnPortal()
@@ -123,7 +129,6 @@ function scene:hide(event)
     if (event.phase == "did") then
         Runtime:removeEventListener("enterFrame", onEnterFrame)
         Runtime:removeEventListener("key", onKey)
-        sceneGroup = nil
     end
 end
 
