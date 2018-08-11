@@ -460,6 +460,7 @@ local function playerGotDamage(damage)
     if playerHP == 0 then
         audio.play(soundLose)
         gameInPause = true
+        composer.gotoScene('scenes.menu')
         border:setStrokeColor(1, 0.3, 0.4)
     end
 end
