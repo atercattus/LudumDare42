@@ -103,6 +103,9 @@ local gunsInfo = {
     },
 }
 
+local enemyTypePortal = 1
+local enemyTypeSlow = 2
+
 local function switchGun(num)
     if num < gunTypePistol or num > gunTypeMaxValue then
         return
@@ -398,6 +401,7 @@ end
 local function spawnEnemy(portal)
     local enemy = display.newImageRect(levelGroup, "data/evil.png", 128, 128)
     enemy.name = "enemy"
+    enemy.enemyType = enemyTypeSlow
 
     -- ToDo: нужно спавнить в сторону центра
     enemy.x = portal.x + randomInt(-1, 1) * 128
@@ -432,14 +436,41 @@ local function updateEnemy(enemy, deltaTime)
     moveTo(enemy, { x = player.x, y = player.y }, enemySpeed, deltaTime)
 end
 
-local function dropAmmo(enemy)
---    if not enabled() then
---        return
---    end
+local function dropAmmo(enemyType, enemyObj)
+    local gunType
+    local ammoQuantity
+    if enemyType == enemyTypePortal then
+        local rnd = 100 - randomInt(100)
+        if rnd < 70 then
+            gunType = gunTypeRocketLauncher
+            ammoQuantity = 3
+        elseif rnd < 15 then
+            gunType = gunTypeMachinegun
+            ammoQuantity = 20
+        else
+            gunType = gunTypeShotgun
+            ammoQuantity = 5
+        end
+    elseif enemyType == enemyTypeSlow then
+        local rnd = 100 - randomInt(100)
+        if rnd < 3 then
+            gunType = gunTypeMachinegun
+            ammoQuantity = 5
+        elseif rnd < 10 then
+            gunType = gunTypeShotgun
+            ammoQuantity = 2
+        end
+    else
+        -- не реализовано
+        return
+    end
+
+    if not gunType then
+        -- дроп не в этот раз
+        return
+    end
 
     local ammoIconScale = 3
-
-    local gunType = randomInt(gunTypePistol+1, gunTypeMaxValue)
 
     local drop = display.newRect(0, 0,
         ammoBlockWidth * ammoIconScale,
@@ -448,11 +479,11 @@ local function dropAmmo(enemy)
     levelGroup:insert(drop)
 
     drop.gunType = gunType
-    drop.quantity = 10
+    drop.quantity = ammoQuantity
 
     drop.fill = { type = "image", sheet = ammoBlocksImageSheet, frame = gunType }
-    drop.x = enemy.x
-    drop.y = enemy.y
+    drop.x = enemyObj.x
+    drop.y = enemyObj.y
     drop.anchorX = 0
     drop.anchorY = 0
 
@@ -462,7 +493,7 @@ end
 local function enemyDied(enemyIdx)
     local enemy = enemies[enemyIdx]
 
-    dropAmmo(enemy)
+    dropAmmo(enemy.enemyType, enemy)
 
     enemy:removeSelf()
     table.remove(enemies, enemyIdx)
@@ -509,6 +540,9 @@ end
 
 local function portalDestroed(portalIdx)
     local portal = portals[portalIdx]
+
+    dropAmmo(enemyTypePortal, portal)
+
     portal:removeSelf()
     table.remove(portals, portalIdx)
 
@@ -702,7 +736,7 @@ local function setupGunsAndAmmo(sceneGroup)
 
         local text = display.newText({
             parent = sceneGroup,
-            text = (gunType == gunTypePistol) and "--" or "42",
+            text = (gunType == gunTypePistol) and "--" or "0",
             width = W,
             font = fontName,
             fontSize = 42,
@@ -776,8 +810,7 @@ function scene:show(event)
 
         setupBorder()
         setupPlayer()
-        local portal = spawnPortal(true)
-        --local enemy = spawnEnemy(portal)
+        spawnPortal(true)
 
         Runtime:addEventListener("enterFrame", onEnterFrame)
         Runtime:addEventListener("key", onKey)
