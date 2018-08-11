@@ -427,6 +427,8 @@ local function portalDestroed(portalIdx)
 
     totalScore = totalScore + 50
 
+    playerSpeed = math.min(700, playerSpeed + 20)
+
     borderRadius = borderRadius + 250 -- ToDo: умножать, а не прибавлять
     border.path.radius = borderRadius -- ToDo: анимация
 
