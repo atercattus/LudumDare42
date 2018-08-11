@@ -93,6 +93,8 @@ local gunTypeMachinegun = 3
 local gunTypeRocketLauncher = 4
 local gunTypeMaxValue = gunTypeRocketLauncher
 
+local gunTypeDropHeart = gunTypeMaxValue + 1 -- костыль для выпадения сердечек
+
 local rocketDamageRadius = 300
 
 local gunsInfo = {
@@ -667,8 +669,14 @@ local function dropAmmo(enemyType, enemyObj)
     end
 
     if not gunType then
-        -- дроп не в этот раз
-        return
+        if (playerHP < 5) and (randomInt(100) >= 90) then
+            -- иногда можно и сердечко выкинуть
+            gunType = gunTypeDropHeart
+            ammoQuantity = 1
+        else
+            -- дроп не в этот раз
+            return
+        end
     end
 
     local ammoIconScale = 3
@@ -999,8 +1007,13 @@ local function updateAmmoDrops(deltaTime)
         if not isObjInsideBorder(drop) then
             to_delete[#to_delete + 1] = i
         elseif hasCollidedCircle(player, drop) then
-            ammoAllowed[drop.gunType] = ammoAllowed[drop.gunType] + drop.quantity
-            updateAmmoAllowed(drop.gunType)
+            if drop.gunType == gunTypeDropHeart then
+                playerHP = playerHP + drop.quantity
+                updateHeart()
+            else
+                ammoAllowed[drop.gunType] = ammoAllowed[drop.gunType] + drop.quantity
+                updateAmmoAllowed(drop.gunType)
+            end
             to_delete[#to_delete + 1] = i
         end
     end
