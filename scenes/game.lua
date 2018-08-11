@@ -227,16 +227,16 @@ function scene:setupBorder()
     self.border:setStrokeColor(0.4, 0.8, 1)
 end
 
-function scene:setupAim(sceneGroup)
-    self.aim = display.newImageRect(sceneGroup, "data/aim.png", 32, 32)
+function scene:setupAim()
+    self.aim = display.newImageRect(self.view, "data/aim.png", 32, 32)
     self.aim.name = "aim"
     self.aim.anchorX = 0.5
     self.aim.anchorY = 0.5
 end
 
-function scene:setupScores(sceneGroup)
+function scene:setupScores()
     self.scoresText = display.newText({
-        parent = sceneGroup,
+        parent = self.view,
         text = "",
         width = self.W,
         font = fontName,
@@ -387,6 +387,44 @@ function scene:shot()
     end
 end
 
+function scene:playerDied()
+    audio.play(self.soundLose)
+    self.gameInPause = true
+
+    local blur = display.newRect(self.view, 0, 0, self.W, self.H)
+    blur.anchorX = 0
+    blur.anchorY = 0
+    blur.alpha = 0
+    blur.fill = { 0, 0, 0, 1 }
+    transition.to(blur, { time = 1000, alpha = 1 })
+
+    local closedPortals = math.max(0, self.portalsCreatedForAllTime - #self.portals)
+    local scores = "Your score: " .. tostring(self.totalScore)
+            .. "\n\nClosed portals: " .. tostring(closedPortals)
+    local gameOverText = display.newText({
+        parent = self.view,
+        text = scores .. "\n\nTry again!",
+        width = self.W,
+        font = fontName,
+        fontSize = 64,
+        align = 'center',
+    })
+    self.view:insert(gameOverText)
+    gameOverText:setFillColor(1, 1, 1)
+    gameOverText.anchorX = 0.5
+    gameOverText.anchorY = 0.5
+    gameOverText.x = self.W / 2
+    gameOverText.y = self.H / 2
+
+    blur:addEventListener("touch", function(event)
+        if event.phase == 'ended' then
+            composer.gotoScene('scenes.menu')
+            return true
+        end
+        return false
+    end)
+end
+
 function scene:playerGotDamage(damage)
     local currentTime = system.getTimer()
 
@@ -401,10 +439,7 @@ function scene:playerGotDamage(damage)
     audio.play(self.soundHit)
     self:updateHeart()
     if self.playerHP == 0 then
-        audio.play(self.soundLose)
-        self.gameInPause = true
-        composer.gotoScene('scenes.menu')
-        self.border:setStrokeColor(1, 0.3, 0.4)
+        self:playerDied()
     end
 end
 
@@ -1013,7 +1048,7 @@ function scene:updateAmmoDrops(deltaTime)
     end
 end
 
-function scene:setupGunsAndAmmo(sceneGroup)
+function scene:setupGunsAndAmmo()
     self.gunsCount = 4
     local options = {
         width = 140,
@@ -1046,7 +1081,7 @@ function scene:setupGunsAndAmmo(sceneGroup)
         local icon = display.newRect(0, 0,
             ammoBlockWidth * ammoIconScale,
             ammoBlockHeight * ammoIconScale)
-        sceneGroup:insert(icon)
+        self.view:insert(icon)
         self.ammoBlocksIcons[gunType] = icon
         icon.fill = { type = "image", sheet = self.ammoBlocksImageSheet, frame = gunType }
         icon.x = 10
@@ -1055,7 +1090,7 @@ function scene:setupGunsAndAmmo(sceneGroup)
         icon.anchorY = 0
 
         local text = display.newText({
-            parent = sceneGroup,
+            parent = self.view,
             text = (gunType == gunTypePistol) and "--" or "0",
             width = self.W,
             font = fontName,
@@ -1074,11 +1109,11 @@ function scene:setupGunsAndAmmo(sceneGroup)
     end
 end
 
-function scene:setupHeart(sceneGroup)
+function scene:setupHeart()
     self.heartIcon = display.newRect(0, 0,
         ammoBlockWidth * ammoIconScale,
         ammoBlockHeight * ammoIconScale)
-    sceneGroup:insert(self.heartIcon)
+    self.view:insert(self.heartIcon)
     self.heartIcon.fill = { type = "image", sheet = self.ammoBlocksImageSheet, frame = self.gunsCount + 1 }
     self.heartIcon.x = 10
     self.heartIcon.y = 10 + self.gunsCount * ammoBlockHeight * ammoIconScale
@@ -1086,7 +1121,7 @@ function scene:setupHeart(sceneGroup)
     self.heartIcon.anchorY = 0
 
     self.heartIconText = display.newText({
-        parent = sceneGroup,
+        parent = self.view,
         text = "0",
         width = self.W,
         font = fontName,
@@ -1191,10 +1226,8 @@ local function onMouseEvent(event)
 end
 
 function scene:reset()
-    local sceneGroup = scene.view
-
-    for i = sceneGroup.numChildren, 1, -1 do
-        sceneGroup[i]:removeSelf()
+    for i = self.view.numChildren, 1, -1 do
+        self.view[i]:removeSelf()
     end
 
     self.pressedKeys = {
@@ -1269,23 +1302,21 @@ scene:addEventListener("show", function(event)
     if (event.phase == "will") then
         scene:reset()
 
-        local sceneGroup = scene.view
-
         scene.W, scene.H = display.contentWidth, display.contentHeight
 
         scene.levelGroup = display.newGroup()
         scene.levelGroup.x = scene.W / 2
         scene.levelGroup.y = scene.H / 2
-        sceneGroup:insert(scene.levelGroup)
+        scene.view:insert(scene.levelGroup)
 
-        scene:setupAim(sceneGroup)
+        scene:setupAim()
 
-        scene:setupScores(sceneGroup)
+        scene:setupScores()
         scene:updateScores()
 
-        scene:setupGunsAndAmmo(sceneGroup)
+        scene:setupGunsAndAmmo()
 
-        scene:setupHeart(sceneGroup)
+        scene:setupHeart()
 
         scene:setupEnemies()
         scene:setupEnemyAmmo()
