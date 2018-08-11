@@ -18,7 +18,7 @@ local hasCollidedCircle = utils.hasCollidedCircle
 --  ŒÕ—“¿Õ“€
 -- ===============
 
-local fontName = 'data/kitchen-police.regular.ttf' -- https://www.1001fonts.com/kitchen-police-font.html
+local fontName = 'data/ErikaOrmig.ttf'
 
 local damageFromPortal = 3
 local damageFromBorder = 99999
@@ -95,7 +95,7 @@ local enemyTypeMaxValue = enemyTypeFast
 local enemyInfo = {
     speeds = {
         [enemyTypeSlow] = 70,
-        [enemyTypeFast] = 250,
+        [enemyTypeFast] = 300,
         [enemyTypeShooter] = 100,
         [enemyTypeGuard] = 60,
     },
@@ -127,7 +127,7 @@ function scene:updateActiveGunInUI(currentGunType)
     for gunType, text in ipairs(self.ammoBlocksTexts) do
         if currentGunType == gunType then
             text:setFillColor(1, 1, 1)
-            text.size = 52
+            text.size = 48
         else
             text:setFillColor(1, 1, 0.4)
             text.size = 42
@@ -417,7 +417,7 @@ function scene:playerDied()
     gameOverText.y = self.H / 2
 
     blur:addEventListener("touch", function(event)
-        if event.phase == 'ended' then
+        if event.phase == 'began' then
             composer.gotoScene('scenes.menu')
             return true
         end

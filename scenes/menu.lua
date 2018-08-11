@@ -4,7 +4,7 @@ local scene = composer.newScene()
 
 local gameName = 'Weeding of Demons'
 
-local fontName = 'data/kitchen-police.regular.ttf' -- https://www.1001fonts.com/kitchen-police-font.html
+local fontName = 'data/ErikaOrmig.ttf' -- https://www.1001fonts.com/erika-ormig-font.html
 
 -- ===========================================================================================
 
@@ -21,13 +21,10 @@ function scene:create(event)
     titleText.y = 10
 
     local controls = [[
-Destroy all demonic portals
+Destroy all demonic portals ;-)
 
 Beware of the barrier
 
-
-
-Controls
 
 Movement:
 WSAD or Arrow Keys
@@ -39,19 +36,19 @@ Fire:
 Left mouse button
         ]]
 
-    local controlsText = display.newText({ text = controls, width = W, font = fontName, fontSize = 46, align = 'center' })
+    local controlsText = display.newText({ text = controls, width = W, font = fontName, fontSize = 54, align = 'center' })
     sceneGroup:insert(controlsText)
     controlsText:setFillColor(0.8, 0.8, 0.8)
     controlsText.anchorX = 0
     controlsText.anchorY = 0
     controlsText.x = 0
-    controlsText.y = 150
+    controlsText.y = 120
 
     local startGameText = display.newText({ text = 'Fight!', width = W, font = fontName, fontSize = 90, align = 'center' })
     sceneGroup:insert(startGameText)
-    startGameText:setFillColor(1, 1, 1)
+    startGameText:setFillColor(1, 0.4, 0.4)
     startGameText.anchorX = 0.5
-    startGameText.anchorY = 0.5
+    startGameText.anchorY = 1
     startGameText.x = W / 2
     startGameText.y = H - (H - (controlsText.y + controlsText.height)) / 2
 
@@ -67,8 +64,8 @@ Left mouse button
     startGameTextScaleFunc = function()
         transition.scaleTo(startGameText, {
             time = 1500,
-            xScale = 1.2,
-            yScale = 1.2,
+            xScale = 1.3,
+            yScale = 1.3,
             onComplete = function()
                 transition.scaleTo(startGameText, { time = 1500, xScale = 1, yScale = 1, onComplete = startGameTextScaleFunc })
             end
