@@ -48,8 +48,8 @@ local totalScore = 0
 local playerHP = 10
 local playerInvulnBefore = 0
 
-local damageFromPortal = 5
-local damageFromBorder = 9
+local damageFromPortal = 3
+local damageFromBorder = 5
 
 local aim
 
@@ -100,10 +100,10 @@ local gunsInfo = {
     lastShots = {},
     -- интервалы между выстрелами каждой пушки
     shotIntervals = {
-        [gunTypePistol] = 200,
-        [gunTypeShotgun] = 600,
+        [gunTypePistol] = 150,
+        [gunTypeShotgun] = 500,
         [gunTypeMachinegun] = 100,
-        [gunTypeRocketLauncher] = 1000,
+        [gunTypeRocketLauncher] = 900,
     },
     -- скорости патронов из пушек
     speeds = {
@@ -119,7 +119,16 @@ local gunsInfo = {
         [gunTypeMachinegun] = 116,
         [gunTypeRocketLauncher] = 108,
     },
+    -- урон от оружия
+    damages = {
+        [gunTypePistol] = 1,
+        [gunTypeShotgun] = 2,
+        [gunTypeMachinegun] = 2,
+        [gunTypeRocketLauncher] = 10,
+    },
 }
+
+local portalHP = 3
 
 local enemyGuardMaxDistance = 200 -- максимальное расстояние, на которое Страж отходит от своего портала
 local enemyShooterDistance = 500 -- расстояние, на котором стрелок старается держаться от игрока
@@ -146,6 +155,12 @@ local enemyInfo = {
         [enemyTypeFast] = 2,
         [enemyTypeShooter] = 2,
         [enemyTypeGuard] = 3,
+    },
+    HPs = {
+        [enemyTypeSlow] = 2,
+        [enemyTypeFast] = 1,
+        [enemyTypeShooter] = 3,
+        [enemyTypeGuard] = 99999, -- он програмно неуязвим
     },
 }
 
@@ -372,6 +387,7 @@ local function shot()
         ammo.y = player.y
 
         ammo.rotation = angle
+        ammo.damage = gunsInfo.damages[gunType]
 
         local pos = calcMoveForwardPosition(ammo, barrelLength)
         ammo.x = pos.x
@@ -392,6 +408,8 @@ local function shot()
 
             ammo.rotation = angle
             angle = angle + angleStep
+
+            ammo.damage = gunsInfo.damages[gunType]
 
             local pos = calcMoveForwardPosition(ammo, barrelLength)
             ammo.x = pos.x
@@ -454,6 +472,8 @@ local function spawnPortal(first)
     local portal = display.newImageRect(levelGroup, "data/portal.png", 128, 128)
     portal.name = "portal"
 
+    portal.HP = portalHP
+
     local radius = borderRadius * 0.8
     if first then
         -- в первый раз создаем портал поближе. может, и всегда так будет :)
@@ -492,6 +512,8 @@ local function spawnEnemy(portal)
 
     local enemy = display.newRect(0, 0, 128, 128)
     levelGroup:insert(enemy)
+
+    enemy.HP = enemyInfo.HPs[enemyType]
 
     if enemyType == enemyTypeGuard then
         enemy.portal = portal
@@ -601,19 +623,40 @@ local function dropAmmo(enemyType, enemyObj)
         local rnd = 100 - randomInt(100)
         if rnd < 70 then
             gunType = gunTypeRocketLauncher
-            ammoQuantity = 3
+            ammoQuantity = 5
         elseif rnd < 15 then
             gunType = gunTypeMachinegun
-            ammoQuantity = 20
+            ammoQuantity = 30
         else
             gunType = gunTypeShotgun
-            ammoQuantity = 5
+            ammoQuantity = 15
+        end
+    elseif enemyType == enemyTypeShooter then
+        local rnd = 100 - randomInt(100)
+        if rnd < 5 then
+            gunType = gunTypeRocketLauncher
+            ammoQuantity = randomInt(1, 2)
+        elseif rnd < 50 then
+            gunType = gunTypeMachinegun
+            ammoQuantity = 30
+        elseif rnd < 10 then
+            gunType = gunTypeShotgun
+            ammoQuantity = 10
+        end
+    elseif enemyType == enemyTypeFast then
+        local rnd = 100 - randomInt(100)
+        if rnd < 3 then
+            gunType = gunTypeMachinegun
+            ammoQuantity = 20
+        elseif rnd < 10 then
+            gunType = gunTypeShotgun
+            ammoQuantity = 10
         end
     elseif enemyType == enemyTypeSlow then
         local rnd = 100 - randomInt(100)
         if rnd < 3 then
             gunType = gunTypeMachinegun
-            ammoQuantity = 5
+            ammoQuantity = 10
         elseif rnd < 10 then
             gunType = gunTypeShotgun
             ammoQuantity = 2
@@ -680,12 +723,24 @@ local function updateEnemies(deltaTime)
 end
 
 local function enemyGotDamage(enemyIdx, damage)
-    if enemies[enemyIdx].enemyType == enemyTypeGuard then
+    local enemy = enemies[enemyIdx]
+
+    if enemy == nil then
+        print("BUG in enemyGotDamage:", enemyIdx, damage)
+        return
+    end
+
+    if enemy.enemyType == enemyTypeGuard then
         -- страж портала неуязвим
         return
     end
 
-    enemyDied(enemyIdx)
+    local HP = enemy.HP - damage
+    if HP <= 0 then
+        enemyDied(enemyIdx)
+    else
+        enemy.HP = HP
+    end
 end
 
 local function getNewPortslsCount()
@@ -739,7 +794,14 @@ local function portalDestroed(portalIdx)
 end
 
 local function portalGotDamage(portalIdx, damage)
-    portalDestroed(portalIdx)
+    local portal = portals[portalIdx]
+
+    local HP = portal.HP - damage
+    if HP <= 0 then
+        portalDestroed(portalIdx)
+    else
+        portal.HP = HP
+    end
 end
 
 local function getEnemyDamage(enemy)
@@ -823,7 +885,7 @@ local function ammoCollideAnim(ammo)
     end
 
     local r = display.newCircle(levelGroup, ammo.x, ammo.y, rocketDamageRadius)
-    r.fill = {1, 0.4, 0.4, 0.3 }
+    r.fill = { 1, 0.4, 0.4, 0.3 }
     timer.performWithDelay(300, function()
         r:removeSelf()
     end)
@@ -832,7 +894,7 @@ local function ammoCollideAnim(ammo)
     local to_delete = {}
     for enemyIdx, enemy in ipairs(enemies) do
         if distanceBetween(ammo, enemy) < rocketDamageRadius then
-            to_delete[#to_delete+1] = enemyIdx
+            to_delete[#to_delete + 1] = enemyIdx
         end
     end
 
@@ -844,7 +906,7 @@ local function ammoCollideAnim(ammo)
     local to_delete = {}
     for portalIdx, portal in ipairs(portals) do
         if distanceBetween(ammo, portal) < rocketDamageRadius then
-            to_delete[#to_delete+1] = portalIdx
+            to_delete[#to_delete + 1] = portalIdx
         end
     end
 
@@ -858,20 +920,30 @@ end
 local function updateAmmo(ammo, deltaTime)
     local collided = false
 
-    for i, enemy in ipairs(enemies) do
+    local got_damage = {}
+    for enemyIdx, enemy in ipairs(enemies) do
         if hasCollidedCircle(ammo, enemy) then
             ammoCollideAnim(ammo)
-            enemyGotDamage(i, ammo.damage)
+            got_damage[#got_damage + 1] = enemyIdx
             collided = true
         end
     end
+    for i = #got_damage, 1, -1 do
+        local enemyIdx = got_damage[i]
+        enemyGotDamage(enemyIdx, ammo.damage)
+    end
 
+    local got_damage = {}
     for i, portal in ipairs(portals) do
         if hasCollidedCircle(ammo, portal) then
             ammoCollideAnim(ammo)
-            portalGotDamage(i, ammo.damage)
+            got_damage[#got_damage + 1] = i
             collided = true
         end
+    end
+    for i = #got_damage, 1, -1 do
+        local idx = got_damage[i]
+        portalGotDamage(idx, ammo.damage)
     end
 
     if collided then
