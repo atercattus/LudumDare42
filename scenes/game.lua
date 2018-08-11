@@ -22,7 +22,7 @@ local enemies = {}
 local portals = {}
 local scoresText
 
-local borderRadius = 450
+local borderRadius = 800
 local borderRadiusSpeed = 20
 local playerSpeed = 400
 
@@ -103,12 +103,22 @@ local function spawnPlayer()
     player.y = H / 2
 end
 
-local function spawnPortal()
-    --    print("borderRadius", borderRadius)wd
-
+local function spawnPortal(first)
     local portal = display.newImageRect(levelGroup, "data/portal.png", 128, 128)
-    portal.x = W / 2 + randomInt(-2, 2) * portal.width
-    portal.y = H / 2 + randomInt(-2, 2) * portal.height
+
+    local radius = borderRadius * 0.8
+    if first then
+        -- в первый раз создаем портал поближе. может, и всегда так будет :)
+        radius = radius / 2
+    end
+
+    local A = randomInt(360)
+    local angle = math.rad(A - 90)
+    local x = math.cos(angle) * radius
+    local y = math.sin(angle) * radius
+
+    portal.x = W / 2 + x
+    portal.y = H / 2 + y
 
     portals[#portals + 1] = portal
 
@@ -167,8 +177,8 @@ function scene:show(event)
 
         setupBorder()
         spawnPlayer()
-        local portal = spawnPortal()
-        local enemy = spawnEnemy(portal)
+        local portal = spawnPortal(true)
+        --local enemy = spawnEnemy(portal)
 
         Runtime:addEventListener("enterFrame", onEnterFrame)
         Runtime:addEventListener("key", onKey)
