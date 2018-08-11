@@ -39,6 +39,11 @@ local enemySpeed = 70 -- пока для всех одинаковая
 local gunsImageSheet
 
 local function onKey(event)
+    if event.keyName == 'space' and event.phase == 'down' then -- ToDo: удалить из релиза
+        gameInPause = not gameInPause
+        return
+    end
+
     if event.keyName == 'left' or event.keyName == 'a' then
         pressedKeys.left = event.phase == 'down'
     elseif event.keyName == 'right' or event.keyName == 'd' then
@@ -178,12 +183,16 @@ local function updateBorderRadius(deltaTime)
     end
 end
 
-local function spawnPlayer()
+local function setupPlayer()
     local playerImage = display.newImageRect("data/man.png", 128, 128)
     playerImage.name = "player_image"
 
-    local gun = display.newImage(gunsImageSheet, 1)
+    local gun = display.newRect(0, 0, 140, 50)
     gun.name = "player_gun"
+    gun.fill = { type = "image", sheet = gunsImageSheet, frame = 1 }
+    --gun.fill.frame = 2
+    gun.anchorX = 0.2
+    gun.anchorY = 0.2
 
     player = display.newGroup()
     levelGroup:insert(player)
@@ -274,32 +283,9 @@ end
 
 local function setupGuns()
     local options = {
-        sheetContentWidth = 380,
-        sheetContentHeight = 454,
-        frames = {
-            {
-                -- gun
-                x = 0, -- 18
-                y = 0, -- 21
-                width = 135,
-                height = 42,
-                sourceX = 8,
-                sourceY = 403,
-                sourceWidth = 135, -- 60
-                sourceHeight = 42, -- 33
-            },
-            {
-                -- machinegun
-                x = 0, -- 18
-                y = 0, -- 21
-                width = 135,
-                height = 42,
-                sourceX = 14,
-                sourceY = 16,
-                sourceWidth = 135,
-                sourceHeight = 42,
-            },
-        },
+        width = 140,
+        height = 50,
+        numFrames = 4,
     }
     gunsImageSheet = graphics.newImageSheet("data/guns.png", options)
 end
@@ -321,9 +307,11 @@ local function onEnterFrame(event)
     end
 
     updatePlayer(deltaTime)
-    updateBorderRadius(deltaTime)
-    updatePortals(deltaTime)
-    updateEnemies(deltaTime)
+    if true then
+        updateBorderRadius(deltaTime)
+        updatePortals(deltaTime)
+        updateEnemies(deltaTime)
+    end
 end
 
 -- ===========================================================================================
@@ -355,7 +343,7 @@ function scene:show(event)
         setupGuns()
 
         setupBorder()
-        spawnPlayer()
+        setupPlayer()
         local portal = spawnPortal(true)
         --local enemy = spawnEnemy(portal)
 
