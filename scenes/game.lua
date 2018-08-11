@@ -10,6 +10,7 @@ local enabled = utils.enabled
 local sqr = utils.sqr
 local vec2Angle = utils.vectorToAngle
 local vectorLen = utils.vectorLen
+local vector = utils.vector
 local hasCollidedCircle = utils.hasCollidedCircle
 
 local pressedKeys = {
@@ -56,7 +57,7 @@ local borderRadius = 800
 local borderRadiusSpeed = 50
 local playerSpeed = 400
 
-local enemySpeed = 70 -- пока для всех одинаковая
+local enemyImageSheet
 
 local gunsCount
 local gunsImageSheet
@@ -111,10 +112,29 @@ local gunsInfo = {
     },
 }
 
-local enemyTypePortal = 1
-local enemyTypeSlow = 2
+local enemyGuardMaxDistance = 200 -- максимальное расстояние, на которое Страж отходит от своего портала
 
-local enemyDamageSlow = 1
+local enemyTypePortal = 0
+local enemyTypeSlow = 2 -- медленно идет на игрока
+local enemyTypeShooter = 1 -- старается держаться на расстоянии выстрела. и стреляет
+local enemyTypeGuard = 3 -- защитник портала. неуязвим (?) пока портал цел
+local enemyTypeFast = 4 -- бежит на игрока, и при контакте гибнет
+local enemyTypeMaxValue = enemyTypeFast
+
+local enemyInfo = {
+    speeds = {
+        [enemyTypeSlow] = 70,
+        [enemyTypeFast] = 250,
+        [enemyTypeShooter] = 100,
+        [enemyTypeGuard] = 60,
+    },
+    damages = {
+        [enemyTypeSlow] = 1,
+        [enemyTypeFast] = 2,
+        [enemyTypeShooter] = 3,
+        [enemyTypeGuard] = 3,
+    },
+}
 
 local function switchGun(num)
     if num < gunTypePistol or num > gunTypeMaxValue then
@@ -412,10 +432,36 @@ local function spawnPortal(first)
     return portal
 end
 
+local function getNewEnemyType(portal)
+    local rand = 100 - randomInt(100)
+    -- ToDo: увеличивать вероятность выпадения более сложных противников с развитием
+
+    if (portalsCreatedForAllTime > 3) and (not portal.guard) and (rand < 40) then
+        return enemyTypeGuard
+    elseif rand < 20 then
+        return enemyTypeFast
+    else
+        return enemyTypeSlow
+    end
+end
+
 local function spawnEnemy(portal)
-    local enemy = display.newImageRect(levelGroup, "data/evil.png", 128, 128)
+    local enemyType = getNewEnemyType(portal)
+
+    local enemy = display.newRect(0, 0, 128, 128)
+    levelGroup:insert(enemy)
+
+    if enemyType == enemyTypeGuard then
+        enemy.portal = portal
+        portal.guard = enemy
+    end
+
     enemy.name = "enemy"
-    enemy.enemyType = enemyTypeSlow
+    enemy.enemyType = enemyType
+
+    enemy.fill = { type = "image", sheet = enemyImageSheet, frame = enemyType }
+    enemy.anchorX = 0.5
+    enemy.anchorY = 0.5
 
     -- ToDo: нужно спавнить в сторону центра
     enemy.x = portal.x + randomInt(-1, 1) * 128
@@ -447,6 +493,17 @@ local function updatePortals(deltaTime)
 end
 
 local function updateEnemy(enemy, deltaTime)
+    local enemySpeed = enemyInfo.speeds[enemy.enemyType]
+
+    if enemy.enemyType == enemyTypeGuard then
+        -- Стражи не отходят далеко от своего портала
+        local portal = enemy.portal
+        local distance = vectorLen(vector(enemy.x, enemy.y, portal.x, portal.y))
+        if distance >= enemyGuardMaxDistance then
+            return
+        end
+    end
+
     moveTo(enemy, { x = player.x, y = player.y }, enemySpeed, deltaTime)
 end
 
@@ -519,7 +576,12 @@ local function updateEnemies(deltaTime)
 
     for i, enemy in ipairs(enemies) do
         if not isObjInsideBorder(enemy) then
-            to_delete[#to_delete + 1] = i
+            if enemy.enemyType == enemyTypeGuard then
+                -- Страж не гибнет от барьера, а как и портал движется с ним
+                moveTo(enemy, { x = 0, y = 0 }, borderRadiusSpeed, deltaTime)
+            else
+                to_delete[#to_delete + 1] = i
+            end
         else
             updateEnemy(enemy, deltaTime)
         end
@@ -531,6 +593,11 @@ local function updateEnemies(deltaTime)
 end
 
 local function enemyGotDamage(enemyIdx, damage)
+    if enemies[enemyIdx].enemyType == enemyTypeGuard then
+        -- страж портала неуязвим
+        return
+    end
+
     enemyDied(enemyIdx)
 end
 
@@ -553,6 +620,18 @@ end
 
 local function portalDestroed(portalIdx)
     local portal = portals[portalIdx]
+
+    if portal.guard then
+        -- если у портала был Страж, то он тоже гибнет
+        for enemyIdx, enemy in ipairs(enemies) do
+            if enemy == portal.guard then
+                enemy.portal = nil
+                portal.guard = nil
+                enemyDied(enemyIdx)
+                break
+            end
+        end
+    end
 
     dropAmmo(enemyTypePortal, portal)
 
@@ -577,7 +656,7 @@ local function portalGotDamage(portalIdx, damage)
 end
 
 local function getEnemyDamage(enemy)
-    return enemyDamageSlow -- пока всего один вариант
+    return enemyInfo.damages[enemy.enemyType]
 end
 
 local function playerCheckCollisions()
@@ -798,6 +877,15 @@ local function setupHeart(sceneGroup)
     updateHeart()
 end
 
+local function setupEnemies()
+    local options = {
+        width = 128,
+        height = 128,
+        numFrames = enemyTypeMaxValue,
+    }
+    enemyImageSheet = graphics.newImageSheet("data/evil.png", options)
+end
+
 local lastEnterFrameTime
 local function onEnterFrame(event)
     if (not lastEnterFrameTime) then
@@ -853,6 +941,8 @@ function scene:show(event)
         setupGunsAndAmmo(sceneGroup)
 
         setupHeart(sceneGroup)
+
+        setupEnemies()
 
         setupBorder()
         setupPlayer()
