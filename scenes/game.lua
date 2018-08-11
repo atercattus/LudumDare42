@@ -93,6 +93,8 @@ local gunTypeMachinegun = 3
 local gunTypeRocketLauncher = 4
 local gunTypeMaxValue = gunTypeRocketLauncher
 
+local rocketDamageRadius = 300
+
 local gunsInfo = {
     -- время последнего выстрела из этой пушки (заполняется при инициализации)
     lastShots = {},
@@ -814,20 +816,66 @@ local function updatePlayer(deltaTime)
     playerCheckCollisions()
 end
 
+local function ammoCollideAnim(ammo)
+    if ammo.gunType ~= gunTypeRocketLauncher then
+        -- пока без всяких анимаций для оыбчных пушек
+        return
+    end
+
+    local r = display.newCircle(levelGroup, ammo.x, ammo.y, rocketDamageRadius)
+    r.fill = {1, 0.4, 0.4, 0.3 }
+    timer.performWithDelay(300, function()
+        r:removeSelf()
+    end)
+
+    -- нужно нанести урон всем противникам в области
+    local to_delete = {}
+    for enemyIdx, enemy in ipairs(enemies) do
+        if distanceBetween(ammo, enemy) < rocketDamageRadius then
+            to_delete[#to_delete+1] = enemyIdx
+        end
+    end
+
+    for i = #to_delete, 1, -1 do
+        local enemyIdx = to_delete[i]
+        enemyGotDamage(enemyIdx, ammo.damage)
+    end
+
+    local to_delete = {}
+    for portalIdx, portal in ipairs(portals) do
+        if distanceBetween(ammo, portal) < rocketDamageRadius then
+            to_delete[#to_delete+1] = portalIdx
+        end
+    end
+
+    for i = #to_delete, 1, -1 do
+        local enemyIdx = to_delete[i]
+        portalGotDamage(enemyIdx, ammo.damage)
+    end
+end
+
 -- updateAmmo вернет true, если пулю нужно удалять
 local function updateAmmo(ammo, deltaTime)
+    local collided = false
+
     for i, enemy in ipairs(enemies) do
         if hasCollidedCircle(ammo, enemy) then
-            enemyGotDamage(i, 1)
-            return true
+            ammoCollideAnim(ammo)
+            enemyGotDamage(i, ammo.damage)
+            collided = true
         end
     end
 
     for i, portal in ipairs(portals) do
         if hasCollidedCircle(ammo, portal) then
-            portalGotDamage(i, 1)
-            return true
+            ammoCollideAnim(ammo)
+            portalGotDamage(i, ammo.damage)
+            collided = true
         end
+    end
+
+    if collided then
+        return true
     end
 
     moveForward(ammo, ammo.speed * deltaTime)
