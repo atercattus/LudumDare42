@@ -71,7 +71,14 @@ local gunsInfo = {
         [gunTypePistol] = 1400,
         [gunTypeShotgun] = 1100,
         [gunTypeMachinegun] = 2500,
-        [gunTypeRocketLauncher] = 500,
+        [gunTypeRocketLauncher] = 700,
+    },
+    -- расстояние от рукоятки до конца ствола (чтобы снаряд вылетал откуда надо)
+    barrelLengths = {
+        [gunTypePistol] = 64,
+        [gunTypeShotgun] = 70,
+        [gunTypeMachinegun] = 116,
+        [gunTypeRocketLauncher] = 108,
     },
 }
 
@@ -215,15 +222,20 @@ local function moveTo(obj, target, speed, deltaTime)
     obj.y = obj.y + vec.y
 end
 
-local function moveForward(obj, delta)
+local function calcMoveForwardPosition(obj, delta)
     local angle = math.rad(obj.rotation)
     local vec = { x = math.cos(angle), y = math.sin(angle) }
 
     vec.x = vec.x * delta
     vec.y = vec.y * delta
 
-    obj.x = obj.x + vec.x
-    obj.y = obj.y + vec.y
+    return { x = obj.x + vec.x, y = obj.y + vec.y }
+end
+
+local function moveForward(obj, delta)
+    local pos = calcMoveForwardPosition(obj, delta)
+    obj.x = pos.x
+    obj.y = pos.y
 end
 
 local function shot()
@@ -236,6 +248,12 @@ local function shot()
         angle = -angle + 180
     end
     ammo.rotation = angle
+
+    local barrelLength = gunsInfo.barrelLengths[player.gun.gunType]
+
+    local pos = calcMoveForwardPosition(ammo, barrelLength)
+    ammo.x = pos.x
+    ammo.y = pos.y
 end
 
 local function updatePlayer(deltaTime)
@@ -416,7 +434,6 @@ local function updateAmmos(deltaTime)
 
     for i = #to_delete, 1, -1 do
         local ammo = ammoInFlight[to_delete[i]]
-        --ammo:removeSelf()
         table.remove(ammoInFlight, to_delete[i])
         ammoPut(ammo)
     end
