@@ -51,7 +51,7 @@ local playerHP = 10
 local playerInvulnBefore = 0
 
 local damageFromPortal = 3
-local damageFromBorder = 5
+local damageFromBorder = 99999
 
 local aim
 
@@ -167,6 +167,14 @@ local enemyInfo = {
         [enemyTypeGuard] = 99999, -- он програмно неу€звим
     },
 }
+
+local soundNoAmmo
+local soundLose
+local soundBoom
+local soundHit
+local soundHeart
+local soundExtension
+local soundGuns = {}
 
 local function updateActiveGunInUI(currentGunType)
     if currentGunType == nil then
@@ -385,12 +393,14 @@ local function shot()
         local cnt = ammoAllowed[gunType]
         if cnt == 0 then
             -- нечем стрел€ть
-            -- ToDo: звук щелчка
+            audio.play(soundNoAmmo)
             return
         end
         ammoAllowed[gunType] = cnt - 1
         updateAmmoAllowed(gunType)
     end
+
+    audio.play(soundGuns[gunType])
 
     local angle = player.gun.rotation
     if player.xScale < 0 then
@@ -445,8 +455,10 @@ local function playerGotDamage(damage)
     playerInvulnBefore = currentTime + 1000
 
     playerHP = math.max(0, playerHP - damage)
+    audio.play(soundHit)
     updateHeart()
     if playerHP == 0 then
+        audio.play(soundLose)
         gameInPause = true
         border:setStrokeColor(1, 0.3, 0.4)
     end
@@ -712,10 +724,12 @@ local function dropAmmo(enemyType, enemyObj)
     ammoDrops[#ammoDrops + 1] = drop
 end
 
-local function enemyDied(enemyIdx)
+local function enemyDied(enemyIdx, denyDropAmmo)
     local enemy = enemies[enemyIdx]
 
-    dropAmmo(enemy.enemyType, enemy)
+    if not denyDropAmmo then
+        dropAmmo(enemy.enemyType, enemy)
+    end
 
     enemy:removeSelf()
     table.remove(enemies, enemyIdx)
@@ -806,8 +820,14 @@ local function portalDestroed(portalIdx)
 
     playerSpeed = math.min(700, playerSpeed + 20)
 
-    borderRadius = borderRadius + 250 -- ToDo: умножать, а не прибавл€ть
-    border.path.radius = borderRadius -- ToDo: анимаци€
+    audio.play(soundExtension)
+    transition.to(border.path, {
+        time = 1000,
+        radius = borderRadius + 250,
+        onComplete = function()
+            borderRadius = border.path.radius
+        end,
+    })
 
     local cntNew = getNewPortslsCount() - #portals
     for i = 1, cntNew do
@@ -841,9 +861,12 @@ local function playerCheckCollisions()
         return
     end
 
-    for i, enemy in ipairs(enemies) do
+    for enemyIdx, enemy in ipairs(enemies) do
         if hasCollidedCircle(player, enemy) then
             playerGotDamage(getEnemyDamage(enemy))
+            if enemy.enemyType == enemyTypeFast then
+                enemyDied(enemyIdx, true)
+            end
             return
         end
     end
@@ -910,6 +933,8 @@ local function ammoCollideAnim(ammo)
         -- пока без вс€ких анимаций дл€ оыбчных пушек
         return
     end
+
+    audio.play(soundBoom)
 
     local r = display.newCircle(levelGroup, ammo.x, ammo.y, rocketDamageRadius)
     r.fill = { 1, 0.4, 0.4, 0.3 }
@@ -1027,6 +1052,7 @@ local function updateAmmoDrops(deltaTime)
             to_delete[#to_delete + 1] = i
         elseif hasCollidedCircle(player, drop) then
             if drop.gunType == gunTypeDropHeart then
+                audio.play(soundHeart)
                 playerHP = playerHP + drop.quantity
                 updateHeart()
             else
@@ -1180,11 +1206,30 @@ end
 -- ===========================================================================================
 
 function scene:create(event)
-    --ambientSound = audio.loadSound("data/ambient-menu.wav")
+    soundNoAmmo = audio.loadSound("data/no_ammo.wav")
+    soundLose = audio.loadSound("data/lose.wav")
+    soundBoom = audio.loadSound("data/boom.wav")
+    soundHit = audio.loadSound("data/hit.wav")
+    soundHeart = audio.loadSound("data/heart.wav")
+    soundExtension = audio.loadSound("data/extension.wav")
+
+    soundGuns[gunTypePistol] = audio.loadSound("data/pistol.wav")
+    soundGuns[gunTypeShotgun] = audio.loadSound("data/shotgun.wav")
+    soundGuns[gunTypeMachinegun] = audio.loadSound("data/shotgun.wav")
+    soundGuns[gunTypeRocketLauncher] = audio.loadSound("data/rocket.wav")
 end
 
 function scene:destroy(event)
-    --audio.dispose(ambientSound)
+    audio.dispose(soundNoAmmo)
+    audio.dispose(soundLose)
+    audio.dispose(soundBoom)
+    audio.dispose(soundHit)
+    audio.dispose(soundHeart)
+    audio.dispose(soundExtension)
+
+    for _, sound in ipairs(soundGuns) do
+        audio.dispose(sound)
+    end
 end
 
 function scene:show(event)
