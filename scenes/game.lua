@@ -70,7 +70,7 @@ local gunsInfo = {
     -- интервалы между выстрелами каждой пушки
     shotIntervals = {
         [gunTypePistol] = 200,
-        [gunTypeShotgun] = 400,
+        [gunTypeShotgun] = 600,
         [gunTypeMachinegun] = 100,
         [gunTypeRocketLauncher] = 1000,
     },
