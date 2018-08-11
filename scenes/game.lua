@@ -147,12 +147,28 @@ local enemyInfo = {
     },
 }
 
+local function updateActiveGunInUI(currentGunType)
+    if currentGunType == nil then
+        currentGunType = gunTypePistol
+    end
+
+    for gunType, text in ipairs(ammoBlocksTexts) do
+        if currentGunType == gunType then
+            text:setFillColor(1, 1, 1)
+        else
+            text:setFillColor(1, 1, 0.4)
+        end
+    end
+end
+
 local function switchGun(num)
     if num < gunTypePistol or num > gunTypeMaxValue then
         return
     elseif gameInPause then
         return
     end
+
+    updateActiveGunInUI(num)
 
     player.gun.gunType = num
     player.gun.fill.frame = num
