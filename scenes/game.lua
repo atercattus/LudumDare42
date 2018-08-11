@@ -1,6 +1,8 @@
 local composer = require("composer")
 
+local sqrt = math.sqrt
 local randomInt = require('utils').randomInt
+local sqr = require('utils').sqr
 
 local pressedKeys = {
     left = false,
@@ -18,9 +20,10 @@ local border
 local player
 local enemies = {}
 local portals = {}
+local scoresText
 
 local borderRadius = 450
-local borderRadiusSpeed = 10
+local borderRadiusSpeed = 20
 local playerSpeed = 400
 
 local function onKey(event)
@@ -43,6 +46,26 @@ local function setupBorder()
     border:setStrokeColor(0.4, 0.8, 1)
 end
 
+local function setupScores()
+    scoresText = display.newText({
+        parent = sceneGroup,
+        text = "",
+        width = W,
+        font = 'data/kitchen-police.regular.ttf', -- https://www.1001fonts.com/kitchen-police-font.html
+        fontSize = 42,
+        align = 'center',
+    })
+    scoresText:setFillColor(1, 1, 0.4)
+    scoresText.anchorX = 0.5
+    scoresText.anchorY = 0
+    scoresText.x = W / 2
+    scoresText.y = 0
+end
+
+local function updateScores()
+    scoresText.text = "Radius: " .. math.round(borderRadius)
+end
+
 local function updatePlayer(deltaTime)
     if pressedKeys.left or pressedKeys.right then
         local dir = pressedKeys.left and -1 or 1
@@ -62,6 +85,16 @@ local function updateBorderRadius(deltaTime)
         borderRadius = 0
     end
     border.path.radius = borderRadius
+
+    updateScores()
+
+    local playerDistanceFromCentre = sqrt(sqr(levelGroup.x) + sqr(levelGroup.y))
+            + sqrt(sqr(player.width) + sqr(player.height)) / (2 / 0.7) -- 0.7 для близости к спрайту
+    if playerDistanceFromCentre >= borderRadius then
+        borderRadiusSpeed = 0
+        playerSpeed = 0
+        border:setStrokeColor(1, 0.3, 0.4)
+    end
 end
 
 local function spawnPlayer()
@@ -128,6 +161,9 @@ function scene:show(event)
 
         levelGroup = display.newGroup()
         sceneGroup:insert(levelGroup)
+
+        setupScores()
+        updateScores()
 
         setupBorder()
         spawnPlayer()
