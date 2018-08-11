@@ -3,12 +3,17 @@ local composer = require("composer")
 local sqrt = math.sqrt
 local randomInt = require('utils').randomInt
 local sqr = require('utils').sqr
+local vec2Angle = require('utils').vec2Angle
 
 local pressedKeys = {
     left = false,
     right = false,
     top = false,
     down = false,
+}
+local mousePos = {
+    x = 0,
+    y = 0,
 }
 
 local W, H
@@ -42,6 +47,11 @@ local function onKey(event)
         pressedKeys.down = event.phase == 'down'
     end
     return true
+end
+
+local function onMouseEvent(event)
+    mousePos.x = event.x - W / 2
+    mousePos.y = event.y - H / 2
 end
 
 local function setupBorder()
@@ -123,6 +133,22 @@ local function updatePlayer(deltaTime)
     -- "камера" следует за игроком
     levelGroup.x = levelGroup.x - dX
     levelGroup.y = levelGroup.y - dY
+
+    -- направление взгляда
+    local dir = (mousePos.x > 0) and 1 or -1
+    player.xScale = dir
+
+    -- направление пушки
+    local vec = { x = mousePos.x, y = -mousePos.y }
+    if vec.y == 0 then
+        return
+    end
+    local angle = vec2Angle(vec)
+
+    if player.xScale < 0 then
+        angle = 360 - angle
+    end
+    player.gun.rotation = angle - 90
 end
 
 local function updateBorderRadius(deltaTime)
@@ -321,6 +347,7 @@ function scene:show(event)
 
         Runtime:addEventListener("enterFrame", onEnterFrame)
         Runtime:addEventListener("key", onKey)
+        Runtime:addEventListener("mouse", onMouseEvent)
     end
 end
 
@@ -328,6 +355,7 @@ function scene:hide(event)
     if (event.phase == "did") then
         Runtime:removeEventListener("enterFrame", onEnterFrame)
         Runtime:removeEventListener("key", onKey)
+        Runtime:removeEventListener("mouse", onMouseEvent)
     end
 end
 
