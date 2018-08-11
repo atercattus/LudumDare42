@@ -8,8 +8,9 @@ local tonumber = tonumber
 local randomInt = utils.randomInt
 local enabled = utils.enabled
 local sqr = utils.sqr
-local vec2Angle = utils.vectorToAngle
+local vectorToAngle = utils.vectorToAngle
 local vectorLen = utils.vectorLen
+local distanceBetween = utils.distanceBetween
 local vector = utils.vector
 local hasCollidedCircle = utils.hasCollidedCircle
 
@@ -38,6 +39,7 @@ local portals = {}
 local ammoInFlight = {}
 local ammoInCache = {}
 local ammoDrops = {}
+local enemyAmmoInFlight = {}
 local scoresText
 
 local portalsCreatedForAllTime = 0
@@ -63,6 +65,11 @@ local gunsCount
 local gunsImageSheet
 local ammoImageSheet
 local ammoBlocksImageSheet
+
+local enemyAmmoImageSheet
+
+local enemyAmmoWidth = 15
+local enemyAmmoHeight = 15
 
 local ammoIconScale = 2.5
 
@@ -113,11 +120,14 @@ local gunsInfo = {
 }
 
 local enemyGuardMaxDistance = 200 -- максимальное расстояние, на которое Страж отходит от своего портала
+local enemyShooterDistance = 500 -- расстояние, на котором стрелок старается держаться от игрока
+
+local enemyShooterShootInterval = 2000 -- как часто стрелок стреляет
 
 local enemyTypePortal = 0
 local enemyTypeSlow = 2 -- медленно идет на игрока
 local enemyTypeShooter = 1 -- старается держаться на расстоянии выстрела. и стреляет
-local enemyTypeGuard = 3 -- защитник портала. неуязвим (?) пока портал цел
+local enemyTypeGuard = 3 -- защитник портала. неуязвим, пока портал цел
 local enemyTypeFast = 4 -- бежит на игрока, и при контакте гибнет
 local enemyTypeMaxValue = enemyTypeFast
 
@@ -131,7 +141,7 @@ local enemyInfo = {
     damages = {
         [enemyTypeSlow] = 1,
         [enemyTypeFast] = 2,
-        [enemyTypeShooter] = 3,
+        [enemyTypeShooter] = 2,
         [enemyTypeGuard] = 3,
     },
 }
@@ -294,6 +304,17 @@ local function moveForward(obj, delta)
     obj.y = pos.y
 end
 
+local function moveTowards(obj, target, delta)
+    local vec = vector(obj.x, obj.y, target.x, target.y)
+    local vecLen = vectorLen(vec)
+    if vecLen == 0 then
+        return
+    end
+
+    obj.x = obj.x + delta * (vec.x / vecLen)
+    obj.y = obj.y + delta * (vec.y / vecLen)
+end
+
 local function updateAmmoAllowed(gunType)
     if gunType == gunTypePistol then
         return
@@ -436,8 +457,10 @@ local function getNewEnemyType(portal)
     local rand = 100 - randomInt(100)
     -- ToDo: увеличивать вероятность выпадения более сложных противников с развитием
 
-    if (portalsCreatedForAllTime > 3) and (not portal.guard) and (rand < 40) then
+    if (portalsCreatedForAllTime > 3) and (not portal.guard) and (rand < 30) then
         return enemyTypeGuard
+    elseif rand < 10 then
+        return enemyTypeShooter
     elseif rand < 20 then
         return enemyTypeFast
     else
@@ -446,6 +469,10 @@ local function getNewEnemyType(portal)
 end
 
 local function spawnEnemy(portal)
+    if #enemies > 0 then
+        return
+    end
+
     local enemyType = getNewEnemyType(portal)
 
     local enemy = display.newRect(0, 0, 128, 128)
@@ -454,6 +481,9 @@ local function spawnEnemy(portal)
     if enemyType == enemyTypeGuard then
         enemy.portal = portal
         portal.guard = enemy
+    elseif enemyType == enemyTypeShooter then
+        -- чтобы они не кучковались (если их будет несколько), расставляю их с небольшим рандомом
+        enemy.distanceMult = 0.7
     end
 
     enemy.name = "enemy"
@@ -492,14 +522,56 @@ local function updatePortals(deltaTime)
     end
 end
 
+local function enemyShotToPlayer(enemy)
+    local ammo = display.newRect(0, 0, enemyAmmoWidth, enemyAmmoHeight)
+    levelGroup:insert(ammo)
+    ammo.name = "enemy_ammo"
+    ammo.fill = { type = "image", sheet = enemyAmmoImageSheet, frame = 1 }
+
+    ammo.rotation = 0
+    ammo.speed = 300
+    ammo.damage = enemyInfo.damages[enemy.enemyType]
+
+    ammo.x = enemy.x
+    ammo.y = enemy.y
+
+    local vec = vector(enemy.x, enemy.y, player.x, player.y)
+    ammo.rotation = 90 - vectorToAngle(vec)
+
+    local pos = calcMoveForwardPosition(ammo, 60) -- 60 для 128px выходит норм
+    ammo.x = pos.x
+    ammo.y = pos.y
+
+    enemyAmmoInFlight[#enemyAmmoInFlight + 1] = ammo
+end
+
 local function updateEnemy(enemy, deltaTime)
     local enemySpeed = enemyInfo.speeds[enemy.enemyType]
 
     if enemy.enemyType == enemyTypeGuard then
         -- Стражи не отходят далеко от своего портала
-        local portal = enemy.portal
-        local distance = vectorLen(vector(enemy.x, enemy.y, portal.x, portal.y))
+        local distance = distanceBetween(enemy, enemy.portal)
         if distance >= enemyGuardMaxDistance then
+            return
+        end
+    elseif enemy.enemyType == enemyTypeShooter then
+        -- Стрелки стреляют. Вот так неожиданно
+        local currentTime = system.getTimer()
+        local lastShotTime = enemy.lastShotTime or 0
+        if lastShotTime + enemyShooterShootInterval < currentTime then
+            enemy.lastShotTime = currentTime
+            enemyShotToPlayer(enemy)
+        end
+
+        -- Стрелки стараются держаться на расстоянии
+
+        local deltaDist = enemySpeed * deltaTime
+
+        local toPlayerDist = distanceBetween(enemy, player)
+        local toCentreDist = vectorLen(enemy) + deltaDist
+        if (toPlayerDist < (enemyShooterDistance * enemy.distanceMult)) and (toCentreDist < borderRadius) then
+            -- отходит от игрока
+            moveTowards(enemy, { x = player.x, y = player.y }, -deltaDist)
             return
         end
     end
@@ -709,7 +781,7 @@ local function updatePlayer(deltaTime)
     if vec.y == 0 then
         return
     end
-    local angle = vec2Angle(vec)
+    local angle = vectorToAngle(vec)
 
     if player.xScale < 0 then
         angle = 360 - angle
@@ -751,9 +823,9 @@ local function updateAmmo(ammo, deltaTime)
 end
 
 local function updateAmmos(deltaTime)
+    -- Пули игрока
     local to_delete = {}
     for i, ammo in ipairs(ammoInFlight) do
-        -- ToDo: коллизии с порталами и врагами
         if not isObjInsideBorder(ammo) then
             to_delete[#to_delete + 1] = i
         elseif updateAmmo(ammo, deltaTime) then
@@ -766,6 +838,25 @@ local function updateAmmos(deltaTime)
         local ammo = ammoInFlight[to_delete[i]]
         table.remove(ammoInFlight, to_delete[i])
         ammoPut(ammo)
+    end
+
+    -- Пули врагов
+    local to_delete = {}
+    for i, ammo in ipairs(enemyAmmoInFlight) do
+        if not isObjInsideBorder(ammo) then
+            to_delete[#to_delete + 1] = i
+        elseif hasCollidedCircle(ammo, player) then
+            playerGotDamage(ammo.damage)
+            to_delete[#to_delete + 1] = i
+        else
+            moveForward(ammo, ammo.speed * deltaTime)
+        end
+    end
+
+    for i = #to_delete, 1, -1 do
+        local ammo = enemyAmmoInFlight[to_delete[i]]
+        table.remove(enemyAmmoInFlight, to_delete[i])
+        ammo:removeSelf()
     end
 end
 
@@ -886,6 +977,15 @@ local function setupEnemies()
     enemyImageSheet = graphics.newImageSheet("data/evil.png", options)
 end
 
+local function setupEnemyAmmo()
+    local options = {
+        width = 16,
+        height = 16,
+        numFrames = 1,
+    }
+    enemyAmmoImageSheet = graphics.newImageSheet("data/enemy_ammo.png", options)
+end
+
 local lastEnterFrameTime
 local function onEnterFrame(event)
     if (not lastEnterFrameTime) then
@@ -943,6 +1043,7 @@ function scene:show(event)
         setupHeart(sceneGroup)
 
         setupEnemies()
+        setupEnemyAmmo()
 
         setupBorder()
         setupPlayer()

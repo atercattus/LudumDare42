@@ -50,14 +50,16 @@ function M.vectorLen(vec)
     return math.sqrt(vec.x * vec.x + vec.y * vec.y)
 end
 
-function M.hasCollidedCircle(obj1, obj2)
+function M.distanceBetween(obj1, obj2)
     local dX = obj1.x - obj2.x
     local dY = obj1.y - obj2.y
 
-    local distance = math.sqrt(dX * dX + dY * dY)
-    local minimalDistance = (obj2.contentWidth / 2) + (obj1.contentWidth / 2)
+    return math.sqrt(dX * dX + dY * dY)
+end
 
-    return distance < minimalDistance
+function M.hasCollidedCircle(obj1, obj2)
+    local minimalDistance = (obj2.contentWidth / 2) + (obj1.contentWidth / 2)
+    return M.distanceBetween(obj1, obj2) < minimalDistance
 end
 
 return M
