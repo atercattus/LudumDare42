@@ -20,6 +20,7 @@ local enemies = {}
 local portals = {}
 
 local borderRadius = 450
+local borderRadiusSpeed = 10
 local playerSpeed = 400
 
 local function onKey(event)
@@ -35,18 +36,14 @@ local function onKey(event)
     return true
 end
 
-local lastEnterFrameTime
-local function onEnterFrame(event)
-    if (not lastEnterFrameTime) then
-        lastEnterFrameTime = system.getTimer()
-        return
-    end
-    local deltaTime = (event.time - lastEnterFrameTime) / 1000
-    lastEnterFrameTime = event.time
-    if deltaTime <= 0 then
-        return
-    end
+local function setupBorder()
+    border = display.newCircle(levelGroup, W / 2, H / 2, borderRadius)
+    border:setFillColor(0, 0, 0, 0)
+    border.strokeWidth = 30
+    border:setStrokeColor(0.4, 0.8, 1)
+end
 
+local function updatePlayer(deltaTime)
     if pressedKeys.left or pressedKeys.right then
         local dir = pressedKeys.left and -1 or 1
         local dX = dir * playerSpeed * deltaTime
@@ -57,15 +54,14 @@ local function onEnterFrame(event)
         local dY = dir * playerSpeed * deltaTime
         levelGroup.y = levelGroup.y - dY
     end
-
-    -- ...
 end
 
-local function setupBorder()
-    border = display.newCircle(levelGroup, W / 2, H / 2, borderRadius)
-    border:setFillColor(0, 0, 0, 0)
-    border.strokeWidth = 30
-    border:setStrokeColor(0.4, 0.8, 1)
+local function updateBorderRadius(deltaTime)
+    borderRadius = borderRadius - borderRadiusSpeed * deltaTime
+    if borderRadius < 0 then
+        borderRadius = 0
+    end
+    border.path.radius = borderRadius
 end
 
 local function spawnPlayer()
@@ -75,7 +71,7 @@ local function spawnPlayer()
 end
 
 local function spawnPortal()
-    --    print("borderRadius", borderRadius)
+    --    print("borderRadius", borderRadius)wd
 
     local portal = display.newImageRect(levelGroup, "data/portal.png", 128, 128)
     portal.x = W / 2 + randomInt(-2, 2) * portal.width
@@ -94,6 +90,24 @@ local function spawnEnemy(portal)
     enemies[#enemies + 1] = enemy
 
     return enemy
+end
+
+local lastEnterFrameTime
+local function onEnterFrame(event)
+    if (not lastEnterFrameTime) then
+        lastEnterFrameTime = system.getTimer()
+        return
+    end
+    local deltaTime = (event.time - lastEnterFrameTime) / 1000
+    lastEnterFrameTime = event.time
+    if deltaTime <= 0 then
+        return
+    end
+
+    updatePlayer(deltaTime)
+    updateBorderRadius(deltaTime)
+
+    -- ...
 end
 
 -- ===========================================================================================
