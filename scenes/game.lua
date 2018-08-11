@@ -13,7 +13,6 @@ local pressedKeys = {
 
 local W, H
 local scene = composer.newScene()
-local sceneGroup
 local levelGroup
 
 local border
@@ -23,7 +22,7 @@ local portals = {}
 local scoresText
 
 local borderRadius = 800
-local borderRadiusSpeed = 20
+local borderRadiusSpeed = 50
 local playerSpeed = 400
 
 local function onKey(event)
@@ -40,13 +39,13 @@ local function onKey(event)
 end
 
 local function setupBorder()
-    border = display.newCircle(levelGroup, W / 2, H / 2, borderRadius)
+    border = display.newCircle(levelGroup, 0, 0, borderRadius)
     border:setFillColor(0, 0, 0, 0)
     border.strokeWidth = 30
     border:setStrokeColor(0.4, 0.8, 1)
 end
 
-local function setupScores()
+local function setupScores(sceneGroup)
     scoresText = display.newText({
         parent = sceneGroup,
         text = "",
@@ -66,17 +65,32 @@ local function updateScores()
     scoresText.text = "Radius: " .. math.round(borderRadius)
 end
 
+local function isObjInsideBorder(obj)
+    local halfObjSize = sqrt(sqr(obj.width) + sqr(obj.height)) / (2 / 0.7) -- 0.7 для близости к спрайту
+    local distanceFromCentre = sqrt(sqr(obj.x) + sqr(obj.y))
+
+    return (distanceFromCentre + halfObjSize) < borderRadius
+end
+
 local function updatePlayer(deltaTime)
+    local dX, dY = 0, 0
+
     if pressedKeys.left or pressedKeys.right then
         local dir = pressedKeys.left and -1 or 1
-        local dX = dir * playerSpeed * deltaTime
-        levelGroup.x = levelGroup.x - dX
+        dX = dir * playerSpeed * deltaTime
     end
     if pressedKeys.top or pressedKeys.down then
         local dir = pressedKeys.top and -1 or 1
-        local dY = dir * playerSpeed * deltaTime
-        levelGroup.y = levelGroup.y - dY
+        dY = dir * playerSpeed * deltaTime
     end
+
+    -- перемещение игрока
+    player.x = player.x + dX
+    player.y = player.y + dY
+
+    -- "камера" следует за игроком
+    levelGroup.x = levelGroup.x - dX
+    levelGroup.y = levelGroup.y - dY
 end
 
 local function updateBorderRadius(deltaTime)
@@ -88,9 +102,7 @@ local function updateBorderRadius(deltaTime)
 
     updateScores()
 
-    local playerDistanceFromCentre = sqrt(sqr(levelGroup.x) + sqr(levelGroup.y))
-            + sqrt(sqr(player.width) + sqr(player.height)) / (2 / 0.7) -- 0.7 для близости к спрайту
-    if playerDistanceFromCentre >= borderRadius then
+    if not isObjInsideBorder(player) then
         borderRadiusSpeed = 0
         playerSpeed = 0
         border:setStrokeColor(1, 0.3, 0.4)
@@ -98,13 +110,13 @@ local function updateBorderRadius(deltaTime)
 end
 
 local function spawnPlayer()
-    player = display.newImageRect(sceneGroup, "data/man.png", 128, 128)
-    player.x = W / 2
-    player.y = H / 2
+    player = display.newImageRect(levelGroup, "data/man.png", 128, 128)
+    player.name = "player"
 end
 
 local function spawnPortal(first)
     local portal = display.newImageRect(levelGroup, "data/portal.png", 128, 128)
+    portal.name = "portal"
 
     local radius = borderRadius * 0.8
     if first then
@@ -114,11 +126,8 @@ local function spawnPortal(first)
 
     local A = randomInt(360)
     local angle = math.rad(A - 90)
-    local x = math.cos(angle) * radius
-    local y = math.sin(angle) * radius
-
-    portal.x = W / 2 + x
-    portal.y = H / 2 + y
+    portal.x = math.cos(angle) * radius
+    portal.y = math.sin(angle) * radius
 
     portals[#portals + 1] = portal
 
@@ -127,12 +136,35 @@ end
 
 local function spawnEnemy(portal)
     local enemy = display.newImageRect(levelGroup, "data/evil.png", 128, 128)
+    enemy.name = "enemy"
+
     enemy.x = portal.x + 128
     enemy.y = portal.y
 
     enemies[#enemies + 1] = enemy
 
     return enemy
+end
+
+local function updatePortal(portal, deltaTime)
+    -- ...
+end
+
+local function updatePortals(deltaTime)
+    local to_delete = {}
+    for i, portal in ipairs(portals) do
+        if not isObjInsideBorder(portal) then
+            to_delete[#to_delete + 1] = i
+        else
+            updatePortal(portal, deltaTime)
+        end
+    end
+
+    for i = #to_delete, 1, -1 do
+        local portal = portals[to_delete[i]]
+        portal:removeSelf()
+        table.remove(portals, to_delete[i])
+    end
 end
 
 local lastEnterFrameTime
@@ -149,6 +181,7 @@ local function onEnterFrame(event)
 
     updatePlayer(deltaTime)
     updateBorderRadius(deltaTime)
+    updatePortals(deltaTime)
 
     -- ...
 end
@@ -164,15 +197,17 @@ function scene:destroy(event)
 end
 
 function scene:show(event)
-    sceneGroup = self.view
+    local sceneGroup = self.view
 
     if (event.phase == "will") then
         W, H = display.contentWidth, display.contentHeight
 
         levelGroup = display.newGroup()
+        levelGroup.x = W/2
+        levelGroup.y = H/2
         sceneGroup:insert(levelGroup)
 
-        setupScores()
+        setupScores(sceneGroup)
         updateScores()
 
         setupBorder()
