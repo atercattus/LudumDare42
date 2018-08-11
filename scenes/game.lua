@@ -26,6 +26,8 @@ local mousePos = {
     y = 0,
 }
 
+local mouseScrollLastTime = 0
+
 local W, H
 local scene = composer.newScene()
 local levelGroup
@@ -250,6 +252,16 @@ end
 local function onMouseEvent(event)
     mousePos.x = event.x - W / 2
     mousePos.y = event.y - H / 2
+
+    if event.scrollY ~= 0 then
+        local currentTime = system.getTimer()
+        if mouseScrollLastTime + 100 < currentTime then
+            mouseScrollLastTime = currentTime
+
+            local nextGunType = player.gun.gunType + ((event.scrollY < 0) and -1 or 1)
+            switchGun(nextGunType)
+        end
+    end
 
     pressedKeys.mouseLeft = event.isPrimaryButtonDown
 
