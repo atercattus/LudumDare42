@@ -29,6 +29,8 @@ local playerSpeed = 400
 
 local enemySpeed = 70 -- пока для всех одинаковая
 
+local gunsImageSheet
+
 local function onKey(event)
     if event.keyName == 'left' or event.keyName == 'a' then
         pressedKeys.left = event.phase == 'down'
@@ -44,7 +46,7 @@ end
 
 local function setupBorder()
     border = display.newCircle(levelGroup, 0, 0, borderRadius)
-    border:setFillColor(0, 0, 0, 0)
+    border:setFillColor(1, 1, 1, 0.3)
     border.strokeWidth = 30
     border:setStrokeColor(0.4, 0.8, 1)
 end
@@ -56,12 +58,12 @@ local function setupScores(sceneGroup)
         width = W,
         font = 'data/kitchen-police.regular.ttf', -- https://www.1001fonts.com/kitchen-police-font.html
         fontSize = 42,
-        align = 'center',
+        align = 'left',
     })
     scoresText:setFillColor(1, 1, 0.4)
-    scoresText.anchorX = 0.5
+    scoresText.anchorX = 0
     scoresText.anchorY = 0
-    scoresText.x = W / 2
+    scoresText.x = 0
     scoresText.y = 0
 end
 
@@ -69,11 +71,19 @@ local function updateScores()
     scoresText.text = "Radius: " .. math.round(borderRadius)
 end
 
-local function isObjInsideBorder(obj)
-    local halfObjSize = sqrt(sqr(obj.width) + sqr(obj.height)) / (2 / 0.7) -- 0.7 для близости к спрайту
+local function isObjInsideBorder(obj, customSize)
+    local objSize
+    if customSize == nil then
+        objSize = sqrt(sqr(obj.width) + sqr(obj.height))
+    else
+        objSize = customSize
+    end
+
+    objSize = objSize / (1 / 0.7) -- для близости к спрайту
+
     local distanceFromCentre = sqrt(sqr(obj.x) + sqr(obj.y))
 
-    return (distanceFromCentre + halfObjSize) < borderRadius
+    return (distanceFromCentre + (objSize / 2)) < borderRadius
 end
 
 local function moveTo(obj, target, speed, deltaTime)
@@ -124,15 +134,27 @@ local function updateBorderRadius(deltaTime)
 
     updateScores()
 
-    if not isObjInsideBorder(player) then
+    if not isObjInsideBorder(player, player.playerImage.width * sqrt(2)) then
         gameInPause = true
         border:setStrokeColor(1, 0.3, 0.4)
     end
 end
 
 local function spawnPlayer()
-    player = display.newImageRect(levelGroup, "data/man.png", 128, 128)
+    local playerImage = display.newImageRect("data/man.png", 128, 128)
+    playerImage.name = "player_image"
+
+    local gun = display.newImage(gunsImageSheet, 1)
+    gun.name = "player_gun"
+
+    player = display.newGroup()
+    levelGroup:insert(player)
     player.name = "player"
+
+    player:insert(playerImage)
+    player.playerImage = playerImage
+    player:insert(gun)
+    player.gun = gun
 end
 
 local function spawnPortal(first)
@@ -191,7 +213,7 @@ local function updatePortals(deltaTime)
 end
 
 local function updateEnemy(enemy, deltaTime)
-    moveTo(enemy, {x=player.x, y=player.y}, enemySpeed, deltaTime)
+    moveTo(enemy, { x = player.x, y = player.y }, enemySpeed, deltaTime)
 end
 
 local function updateEnemies(deltaTime)
@@ -210,6 +232,38 @@ local function updateEnemies(deltaTime)
         enemy:removeSelf()
         table.remove(enemies, to_delete[i])
     end
+end
+
+local function setupGuns()
+    local options = {
+        sheetContentWidth = 380,
+        sheetContentHeight = 454,
+        frames = {
+            {
+                -- gun
+                x = 0, -- 18
+                y = 0, -- 21
+                width = 135,
+                height = 42,
+                sourceX = 8,
+                sourceY = 403,
+                sourceWidth = 135, -- 60
+                sourceHeight = 42, -- 33
+            },
+            {
+                -- machinegun
+                x = 0, -- 18
+                y = 0, -- 21
+                width = 135,
+                height = 42,
+                sourceX = 14,
+                sourceY = 16,
+                sourceWidth = 135,
+                sourceHeight = 42,
+            },
+        },
+    }
+    gunsImageSheet = graphics.newImageSheet("data/guns.png", options)
 end
 
 local lastEnterFrameTime
@@ -257,6 +311,8 @@ function scene:show(event)
 
         setupScores(sceneGroup)
         updateScores()
+
+        setupGuns()
 
         setupBorder()
         spawnPlayer()
