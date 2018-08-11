@@ -42,8 +42,11 @@ local scoresText
 local portalsCreatedForAllTime = 0
 local totalScore = 0
 
-local playerHP = 200
+local playerHP = 10
 local playerInvulnBefore = 0
+
+local damageFromPortal = 5
+local damageFromBorder = 9
 
 local aim
 
@@ -60,8 +63,13 @@ local gunsImageSheet
 local ammoImageSheet
 local ammoBlocksImageSheet
 
+local ammoIconScale = 2.5
+
 local ammoBlocksIcons = {}
 local ammoBlocksTexts = {}
+
+local heartIcon
+local heartIconText
 
 local ammoAllowed = {}
 
@@ -105,6 +113,8 @@ local gunsInfo = {
 
 local enemyTypePortal = 1
 local enemyTypeSlow = 2
+
+local enemyDamageSlow = 1
 
 local function switchGun(num)
     if num < gunTypePistol or num > gunTypeMaxValue then
@@ -213,7 +223,6 @@ local function updateScores()
     scoresText.text = "Radius: " .. round(borderRadius)
             .. "\nPortals: " .. tostring(#portals)
             .. "\nScore: " .. tostring(totalScore)
-            .. "\nHP: " .. tostring(playerHP)
 end
 
 local function isObjInsideBorder(obj, customSize)
@@ -270,6 +279,10 @@ local function updateAmmoAllowed(gunType)
         return
     end
     ammoBlocksTexts[gunType].text = tostring(ammoAllowed[gunType])
+end
+
+local function updateHeart()
+    heartIconText.text = tostring(playerHP)
 end
 
 local function shot()
@@ -338,6 +351,7 @@ local function playerGotDamage(damage)
     playerInvulnBefore = currentTime + 1000
 
     playerHP = math.max(0, playerHP - damage)
+    updateHeart()
     if playerHP == 0 then
         gameInPause = true
         border:setStrokeColor(1, 0.3, 0.4)
@@ -474,8 +488,7 @@ local function dropAmmo(enemyType, enemyObj)
 
     local drop = display.newRect(0, 0,
         ammoBlockWidth * ammoIconScale,
-        ammoBlockHeight * ammoIconScale
-    )
+        ammoBlockHeight * ammoIconScale)
     levelGroup:insert(drop)
 
     drop.gunType = gunType
@@ -487,7 +500,7 @@ local function dropAmmo(enemyType, enemyObj)
     drop.anchorX = 0
     drop.anchorY = 0
 
-    ammoDrops[#ammoDrops+1] = drop
+    ammoDrops[#ammoDrops + 1] = drop
 end
 
 local function enemyDied(enemyIdx)
@@ -563,22 +576,26 @@ local function portalGotDamage(portalIdx, damage)
     portalDestroed(portalIdx)
 end
 
+local function getEnemyDamage(enemy)
+    return enemyDamageSlow -- пока всего один вариант
+end
+
 local function playerCheckCollisions()
     if not isObjInsideBorder(player, player.playerImage.width * sqrt(2)) then
-        playerGotDamage(1000)
+        playerGotDamage(damageFromBorder)
         return
     end
 
     for i, enemy in ipairs(enemies) do
         if hasCollidedCircle(player, enemy) then
-            playerGotDamage(1)
+            playerGotDamage(getEnemyDamage(enemy))
             return
         end
     end
 
     for i, portal in ipairs(portals) do
         if hasCollidedCircle(player, portal) then
-            playerGotDamage(100)
+            playerGotDamage(damageFromPortal)
             return
         end
     end
@@ -677,11 +694,11 @@ local function updateAmmoDrops(deltaTime)
     local to_delete = {}
     for i, drop in ipairs(ammoDrops) do
         if not isObjInsideBorder(drop) then
-            to_delete[#to_delete+1] = i
+            to_delete[#to_delete + 1] = i
         elseif hasCollidedCircle(player, drop) then
             ammoAllowed[drop.gunType] = ammoAllowed[drop.gunType] + drop.quantity
             updateAmmoAllowed(drop.gunType)
-            to_delete[#to_delete+1] = i
+            to_delete[#to_delete + 1] = i
         end
     end
 
@@ -715,11 +732,10 @@ local function setupGunsAndAmmo(sceneGroup)
     local options = {
         width = ammoBlockWidth,
         height = ammoBlockHeight,
-        numFrames = gunsCount,
+        numFrames = gunsCount + 1, -- +1 для сердечка
     }
     ammoBlocksImageSheet = graphics.newImageSheet("data/ammo_blocks.png", options)
 
-    local ammoIconScale = 2.5
     for gunType = 1, gunsCount do
         ammoAllowed[gunType] = 0
 
@@ -752,6 +768,34 @@ local function setupGunsAndAmmo(sceneGroup)
 
         updateAmmoAllowed(gunType)
     end
+end
+
+local function setupHeart(sceneGroup)
+    heartIcon = display.newRect(0, 0,
+        ammoBlockWidth * ammoIconScale,
+        ammoBlockHeight * ammoIconScale)
+    sceneGroup:insert(heartIcon)
+    heartIcon.fill = { type = "image", sheet = ammoBlocksImageSheet, frame = gunsCount + 1 }
+    heartIcon.x = 10
+    heartIcon.y = 10 + gunsCount * ammoBlockHeight * ammoIconScale
+    heartIcon.anchorX = 0
+    heartIcon.anchorY = 0
+
+    heartIconText = display.newText({
+        parent = sceneGroup,
+        text = "0",
+        width = W,
+        font = fontName,
+        fontSize = 42,
+        align = 'left',
+    })
+    heartIconText:setFillColor(1, 1, 0.4)
+    heartIconText.anchorX = 0
+    heartIconText.anchorY = 0
+    heartIconText.x = heartIcon.x + heartIcon.contentWidth + 10
+    heartIconText.y = heartIcon.y
+
+    updateHeart()
 end
 
 local lastEnterFrameTime
@@ -807,6 +851,8 @@ function scene:show(event)
         updateScores()
 
         setupGunsAndAmmo(sceneGroup)
+
+        setupHeart(sceneGroup)
 
         setupBorder()
         setupPlayer()
