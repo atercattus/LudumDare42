@@ -1,6 +1,9 @@
 local composer = require("composer")
 
+local round = math.round
 local sqrt = math.sqrt
+local tonumber = tonumber
+
 local randomInt = require('utils').randomInt
 local sqr = require('utils').sqr
 local vec2Angle = require('utils').vec2Angle
@@ -36,12 +39,27 @@ local playerSpeed = 400
 
 local enemySpeed = 70 -- пока для всех одинаковая
 
+local gunsCount
 local gunsImageSheet
 
-local function onKey(event)
-    if event.keyName == 'space' and event.phase == 'down' then -- ToDo: удалить из релиза
-        gameInPause = not gameInPause
+local function switchGun(num)
+    if num < 1 or num > gunsCount then
         return
+    elseif gameInPause then
+        return
+    end
+
+    player.gun.fill.frame = num
+end
+
+local function onKey(event)
+    if event.phase == 'down' then
+        if event.keyName == 'space' then -- ToDo: удалить из релиза
+            gameInPause = not gameInPause
+            return
+        elseif "1" <= event.keyName and event.keyName <= "4" then
+            switchGun(tonumber(event.keyName))
+        end
     end
 
     if event.keyName == 'left' or event.keyName == 'a' then
@@ -95,7 +113,7 @@ local function setupScores(sceneGroup)
 end
 
 local function updateScores()
-    scoresText.text = "Radius: " .. math.round(borderRadius)
+    scoresText.text = "Radius: " .. round(borderRadius)
 end
 
 local function isObjInsideBorder(obj, customSize)
@@ -190,7 +208,6 @@ local function setupPlayer()
     local gun = display.newRect(0, 0, 140, 50)
     gun.name = "player_gun"
     gun.fill = { type = "image", sheet = gunsImageSheet, frame = 1 }
-    --gun.fill.frame = 2
     gun.anchorX = 0.2
     gun.anchorY = 0.2
 
@@ -282,10 +299,11 @@ local function updateEnemies(deltaTime)
 end
 
 local function setupGuns()
+    gunsCount = 4
     local options = {
         width = 140,
         height = 50,
-        numFrames = 4,
+        numFrames = gunsCount,
     }
     gunsImageSheet = graphics.newImageSheet("data/guns.png", options)
 end
