@@ -820,10 +820,11 @@ local function portalDestroed(portalIdx)
 
     playerSpeed = math.min(700, playerSpeed + 20)
 
+    borderRadius = borderRadius + 250
     audio.play(soundExtension)
     transition.to(border.path, {
         time = 1000,
-        radius = borderRadius + 250,
+        radius = borderRadius,
         onComplete = function()
             borderRadius = border.path.radius
         end,
