@@ -196,10 +196,7 @@ end
 
 function scene:onKey(event)
     if event.phase == 'down' then
-        if event.keyName == 'space' then -- ToDo: удалить из релиза
-            self.gameInPause = not self.gameInPause
-            return
-        elseif "1" <= event.keyName and event.keyName <= "4" then
+        if "1" <= event.keyName and event.keyName <= "4" then
             self:switchGun(tonumber(event.keyName))
         end
     end
