@@ -408,6 +408,9 @@ function scene:playerDied()
     audio.play(self.soundLose)
     self.gameInPause = true
 
+    self.player.playerImage:setSequence("stay")
+    self.player.playerImage:play()
+
     local blur = display.newRect(self.view, 0, 0, self.W, self.H)
     blur.anchorX = 0
     blur.anchorY = 0
@@ -476,8 +479,27 @@ function scene:setupPlayer()
     }
     local imageSheet = graphics.newImageSheet("data/player.png", options)
 
-    local playerImage = display.newRect(0, 0, 84, 128)
-    playerImage.fill = { type = "image", sheet = imageSheet, frame = 1 }
+    local playerSequenceData = {
+        {
+            name = "stay",
+            frames = { 1 },
+            time = 500,
+            loopCount = 0,
+            --loopDirection = "forward"
+        },
+        {
+            name = "run",
+            frames = { 2, 4, 1 },
+            time = 350,
+            loopCount = 0,
+            loopDirection = "forward"
+        }
+    }
+
+    local playerImage = display.newSprite(imageSheet, playerSequenceData)
+
+    playerImage:setSequence("stay")
+    playerImage:play()
 
     playerImage.name = "player_image"
 
@@ -922,13 +944,26 @@ end
 function scene:updatePlayer(deltaTime)
     local dX, dY = 0, 0
 
+    local isMoving = false
+
     if self.pressedKeys.left or self.pressedKeys.right then
+        isMoving = true
         local dir = self.pressedKeys.left and -1 or 1
         dX = dir * self.playerSpeed * deltaTime
     end
     if self.pressedKeys.top or self.pressedKeys.down then
+        isMoving = true
         local dir = self.pressedKeys.top and -1 or 1
         dY = dir * self.playerSpeed * deltaTime
+    end
+
+    -- смена анимаций
+    if isMoving and self.player.playerImage.sequence ~= "run" then
+        self.player.playerImage:setSequence("run")
+        self.player.playerImage:play()
+    elseif not isMoving and self.player.playerImage.sequence ~= "stay" then
+        self.player.playerImage:setSequence("stay")
+        self.player.playerImage:play()
     end
 
     -- перемещение игрока
