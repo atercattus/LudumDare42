@@ -1569,6 +1569,8 @@ function scene:reset()
     self.ammoAllowed = {}
 
     self.lastEnterFrameTime = 0
+
+    scene.shotImage = nil
 end
 
 scene:addEventListener("show", function(event)
