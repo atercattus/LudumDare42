@@ -251,6 +251,15 @@ function scene:setupAim()
     self.aim.anchorY = 0.5
 end
 
+function scene:setupShotFire()
+    local options = {
+        width = 32,
+        height = 32,
+        numFrames = 2,
+    }
+    self.shotFireImageSheet = graphics.newImageSheet("data/shot_fire.png", options)
+end
+
 function scene:setupScores()
     self.scoresText = display.newText({
         parent = self.view,
@@ -374,6 +383,14 @@ function scene:shot()
     if self.player.xScale < 0 then
         angle = -angle + 180
     end
+
+    local shotFirePosAndRotation = self:calcMoveForwardPosition({
+        rotation = angle,
+        x = self.player.x,
+        y = self.player.y
+    }, barrelLength)
+    shotFirePosAndRotation.rotation = angle
+    self:shotFire(shotFirePosAndRotation)
 
     if self.player.gun.gunType ~= gunTypeShotgun then
         local ammo = self:ammoGet(gunType)
@@ -1084,6 +1101,30 @@ function scene:explosion(posObj)
     explosionImage:play()
 end
 
+function scene:shotFire(posObj)
+    local shotFireSequenceData = {
+        {
+            name = "boom",
+            frames = { 1, 2 },
+            time = 50,
+            loopCount = 1,
+            loopDirection = "forward"
+        },
+    }
+
+    if scene.shotImage == nil then
+        scene.shotImage = display.newSprite(self.shotFireImageSheet, shotFireSequenceData)
+        self.levelGroup:insert(scene.shotImage)
+    end
+
+    scene.shotImage.x = posObj.x
+    scene.shotImage.y = posObj.y
+    scene.shotImage.rotation = posObj.rotation
+
+    scene.shotImage:setSequence("boom")
+    scene.shotImage:play()
+end
+
 function scene:ammoCollideAnim(ammo, enemyOrPortal)
     if ammo.gunType ~= gunTypeRocketLauncher then
         -- пока без особенностей для обычных пушек
@@ -1480,6 +1521,7 @@ function scene:reset()
     self.enemyAmmoImageSheet = nil
     self.pointsImageSheet = nil
     self.explosionImageSheet = nil
+    self.shotFireImageSheet = nil
 
     self.ammoBlocksIcons = {}
     self.ammoBlocksTexts = {}
@@ -1520,6 +1562,9 @@ scene:addEventListener("show", function(event)
 
         scene:setupBorder()
         scene:setupPlayer()
+
+        scene:setupShotFire()
+
         scene:spawnPortal(true)
 
         Runtime:addEventListener("enterFrame", onEnterFrame)
