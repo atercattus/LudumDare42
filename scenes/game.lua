@@ -23,8 +23,8 @@ local fontName = 'data/ErikaOrmig.ttf'
 local damageFromPortal = 3
 local damageFromBorder = 99999
 
-local enemyAmmoWidth = 30
-local enemyAmmoHeight = 30
+local enemyAmmoWidth = 32
+local enemyAmmoHeight = 32
 
 local ammoIconScale = 2.5
 
@@ -597,6 +597,9 @@ function scene:enemyShotToPlayer(enemy)
     local ammoSpeed = (enemy.enemyType == enemyTypeShooter)
             and enemyShooterShootSpeed
             or enemyGuardShootSpeed
+    local ammoScale = (enemy.enemyType == enemyTypeShooter)
+            and 1
+            or 2
 
     ammo.fill = { type = "image", sheet = self.enemyAmmoImageSheet, frame = ammoFrame }
 
@@ -613,6 +616,9 @@ function scene:enemyShotToPlayer(enemy)
     local pos = self:calcMoveForwardPosition(ammo, 60) -- 60 для 128px выходит норм
     ammo.x = pos.x
     ammo.y = pos.y
+
+    ammo.xScale = ammoScale
+    ammo.yScale = ammoScale
 
     self.enemyAmmoInFlight[#self.enemyAmmoInFlight + 1] = ammo
 end
