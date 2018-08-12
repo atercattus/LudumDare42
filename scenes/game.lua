@@ -1241,7 +1241,7 @@ function scene:setupEnemies()
         height = 128,
         numFrames = enemyTypeMaxValue,
     }
-    self.enemyImageSheet = graphics.newImageSheet("data/evil.png", options)
+    self.enemyImageSheet = graphics.newImageSheet("data/enemies.png", options)
 end
 
 function scene:setupEnemyAmmo()
