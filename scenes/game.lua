@@ -1603,7 +1603,7 @@ function scene:reset()
 
     self.lastEnterFrameTime = 0
 
-    scene.shotImage = nil
+    self.shotImage = nil
 end
 
 scene:addEventListener("show", function(event)
