@@ -269,7 +269,6 @@ end
 
 function scene:updateScores()
     self.scoresText.text = "Radius: " .. round(self.borderRadius)
-            .. "\nPortals: " .. tostring(#self.portals)
             .. "\nScore: " .. tostring(self.totalScore)
 end
 
