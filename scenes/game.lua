@@ -452,7 +452,16 @@ function scene:updateBorderRadius(deltaTime)
 end
 
 function scene:setupPlayer()
-    local playerImage = display.newImageRect("data/man.png", 128, 128)
+    local options = {
+        width = 84,
+        height = 128,
+        numFrames = 4,
+    }
+    local imageSheet = graphics.newImageSheet("data/player.png", options)
+
+    local playerImage = display.newRect(0, 0, 84, 128)
+    playerImage.fill = { type = "image", sheet = imageSheet, frame = 1 }
+
     playerImage.name = "player_image"
 
     local gun = display.newRect(0, 0, 140, 50)
@@ -481,7 +490,7 @@ function scene:spawnPortal(first)
     portal.xScale = 2.2
     portal.yScale = 2.2
     portal.fill.effect = "filter.swirl"
-    portal.fill.effect.intensity = randomInt(10)/10
+    portal.fill.effect.intensity = randomInt(10) / 10
 
     portal.HP = portalHP
 
