@@ -2,7 +2,7 @@ local composer = require("composer")
 
 local scene = composer.newScene()
 
-local gameName = 'Weeding of Demons'
+local gameName = 'Oh no! This is monsters!'
 
 local fontName = 'data/ErikaOrmig.ttf' -- https://www.1001fonts.com/erika-ormig-font.html
 
@@ -21,7 +21,7 @@ function scene:create(event)
     titleText.y = 10
 
     local howto = [[
-Destroy all demonic portals ;-)
+Destroy all portals!
 
 Do not touch the Barrier]]
 
