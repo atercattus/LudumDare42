@@ -10,4 +10,7 @@ end
 
 Runtime:addEventListener("unhandledError", myUnhandledErrorListener)
 
+display.setDefault( "textureWrapX", "repeat" )
+display.setDefault( "textureWrapY", "repeat" )
+
 composer.gotoScene("scenes.menu")

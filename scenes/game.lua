@@ -47,6 +47,8 @@ local gunTypeDropHeart = gunTypeMaxValue + 1 -- костыль для выпадения сердечек
 
 local rocketDamageRadius = 300
 
+local groundSize = 1024
+
 local gunsInfo = {
     -- время последнего выстрела из этой пушки (заполняется при инициализации)
     lastShots = {},
@@ -237,7 +239,7 @@ end
 
 function scene:setupBorder()
     self.border = display.newCircle(self.levelGroup, 0, 0, self.borderRadius)
-    self.border:setFillColor(1, 1, 1, 0.3)
+    self.border.fill = { type = "image", filename = "data/ground.png" }
     self.border.strokeWidth = 30
     self.border:setStrokeColor(0.4, 0.8, 1)
 end
@@ -476,6 +478,8 @@ function scene:updateBorderRadius(deltaTime)
         self.borderRadius = 0
     end
     self.border.path.radius = self.borderRadius
+    self.border.fill.scaleX = groundSize / self.borderRadius
+    self.border.fill.scaleY = groundSize / self.borderRadius
 end
 
 function scene:setupPlayer()
@@ -928,6 +932,11 @@ function scene:portalDestroed(portalIdx)
         onComplete = function()
             self.borderRadius = self.border.path.radius
         end,
+    })
+    transition.to(self.border.fill, {
+        time = 1000,
+        scaleX = groundSize / self.borderRadius,
+        scaleY = groundSize / self.borderRadius,
     })
 
     local cntNew = self:getNewPortslsCount() - #self.portals
