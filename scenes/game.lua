@@ -85,6 +85,9 @@ local enemyShooterDistance = 500 -- расстояние, на котором стрелок старается дер
 local enemyShooterShootInterval = 2000 -- как часто стрелок стреляет
 local enemyShooterShootSpeed = 400 -- скорость выстрелов стрелка
 
+local enemyGuardShootInterval = 6000 -- как часто страж стреляет
+local enemyGuardShootSpeed = 200 -- скорость выстрелов стража
+
 local enemyTypePortal = 0
 local enemyTypeSlow = 2 -- медленно идет на игрока
 local enemyTypeShooter = 1 -- старается держаться на расстоянии выстрела. и стреляет
@@ -581,10 +584,18 @@ function scene:enemyShotToPlayer(enemy)
     local ammo = display.newRect(0, 0, enemyAmmoWidth, enemyAmmoHeight)
     self.levelGroup:insert(ammo)
     ammo.name = "enemy_ammo"
-    ammo.fill = { type = "image", sheet = self.enemyAmmoImageSheet, frame = 1 }
+
+    local ammoFrame = (enemy.enemyType == enemyTypeShooter)
+            and 1
+            or 2
+    local ammoSpeed = (enemy.enemyType == enemyTypeShooter)
+            and enemyShooterShootSpeed
+            or enemyGuardShootSpeed
+
+    ammo.fill = { type = "image", sheet = self.enemyAmmoImageSheet, frame = ammoFrame }
 
     ammo.rotation = 0
-    ammo.speed = enemyShooterShootSpeed
+    ammo.speed = ammoSpeed
     ammo.damage = enemyInfo.damages[enemy.enemyType]
 
     ammo.x = enemy.x
@@ -604,6 +615,14 @@ function scene:updateEnemy(enemy, deltaTime)
     local enemySpeed = enemyInfo.speeds[enemy.enemyType]
 
     if enemy.enemyType == enemyTypeGuard then
+        -- Стражи тоже иногда стреляют
+        local currentTime = system.getTimer()
+        local lastShotTime = enemy.lastShotTime or 0
+        if lastShotTime + enemyGuardShootInterval < currentTime then
+            enemy.lastShotTime = currentTime
+            self:enemyShotToPlayer(enemy)
+        end
+
         -- Стражи не отходят далеко от своего портала
         local distance = distanceBetween(enemy, enemy.portal)
         if distance >= enemyGuardMaxDistance then
@@ -1163,7 +1182,7 @@ function scene:setupEnemyAmmo()
     local options = {
         width = enemyAmmoWidth,
         height = enemyAmmoHeight,
-        numFrames = 1,
+        numFrames = 2,
     }
     self.enemyAmmoImageSheet = graphics.newImageSheet("data/enemy_ammo.png", options)
 end
