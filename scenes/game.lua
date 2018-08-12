@@ -925,8 +925,8 @@ function scene:makeSomeBlood(obj, isPortal)
     timer.performWithDelay(100, function()
         bloodImage:removeSelf()
 
-        if (saveFillEffect ~= nil) and (obj.fill ~= nil) then
-            obj.fill.effect = saveFillEffect
+        if obj.fill ~= nil then
+            obj.fill.effect = nil
         end
     end)
 end
