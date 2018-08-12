@@ -1298,7 +1298,7 @@ function scene:setupPoints()
         height = 32,
         numFrames = 1,
     }
-    self.pointsImageSheet = graphics.newImageSheet("data/points.png", options)
+    self.pointsImageSheet = graphics.newImageSheet("data/pointers.png", options)
 end
 
 function scene:onEnterFrame(event)
