@@ -241,7 +241,7 @@ function scene:setupBorder()
     self.border = display.newCircle(self.levelGroup, 0, 0, self.borderRadius)
     self.border.fill = { type = "image", filename = "data/ground.png" }
     self.border.strokeWidth = 30
-    self.border:setStrokeColor(0.4, 0.8, 1)
+    self.border:setStrokeColor(1, 0.3, 0.3)
 end
 
 function scene:setupAim()
