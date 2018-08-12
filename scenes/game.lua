@@ -519,7 +519,7 @@ end
 function scene:setupPlayer()
     local options = {
         width = 84,
-        height = 128,
+        height = 136,
         numFrames = 4,
     }
     local imageSheet = graphics.newImageSheet("data/player.png", options)
