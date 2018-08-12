@@ -119,6 +119,12 @@ local enemyInfo = {
         [enemyTypeShooter] = 3,
         [enemyTypeGuard] = 99999, -- он програмно неу€звим
     },
+    scales = {
+        [enemyTypeSlow] = 0.9,
+        [enemyTypeFast] = 1,
+        [enemyTypeShooter] = 1.1,
+        [enemyTypeGuard] = 1.6,
+    },
 }
 
 -- ===============
@@ -589,6 +595,10 @@ function scene:spawnEnemy(portal)
     enemy.fill = { type = "image", sheet = self.enemyImageSheet, frame = enemyType }
     enemy.anchorX = 0.5
     enemy.anchorY = 0.5
+
+    local scale = enemyInfo.scales[enemyType]
+    enemy.xScale = scale
+    enemy.yScale = scale
 
     -- ToDo: нужно спавнить в сторону центра
     enemy.x = portal.x + randomInt(-1, 1) * enemyWidth
