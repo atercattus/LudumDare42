@@ -12,7 +12,7 @@ function scene:create(event)
     local W, H = display.contentWidth, display.contentHeight
     local sceneGroup = self.view
 
-    local titleText = display.newText({ text = gameName, width = W, font = fontName, fontSize = 72, align = 'center' })
+    local titleText = display.newText({ text = gameName, width = W, font = fontName, fontSize = 90, align = 'center' })
     sceneGroup:insert(titleText)
     titleText:setFillColor(1, 1, 0.4)
     titleText.anchorX = 0.5
@@ -20,39 +20,27 @@ function scene:create(event)
     titleText.x = W / 2
     titleText.y = 10
 
-    local controls = [[
+    local howto = [[
 Destroy all demonic portals ;-)
 
-Beware of the barrier
+Do not touch the Barrier]]
 
+    local howtoText = display.newText({ text = howto, width = W, font = fontName, fontSize = 54, align = 'center' })
+    sceneGroup:insert(howtoText)
+    howtoText:setFillColor(0.8, 0.8, 0.8)
+    howtoText.anchorX = 0
+    howtoText.anchorY = 0
+    howtoText.x = 0
+    howtoText.y = titleText.contentHeight + titleText.y + 40
 
-Movement:
-WSAD or Arrow Keys
+    local controls = display.newImageRect("data/controls.png", 512, 512)
+    sceneGroup:insert(controls)
+    controls.x = W/2
+    controls.y = howtoText.contentHeight + howtoText.y
+    controls.anchorX = 0.5
+    controls.anchorY = 0
 
-Select gun:
-1,2,3,4 or mouse wheel
-
-Fire:
-Left mouse button
-        ]]
-
-    local controlsText = display.newText({ text = controls, width = W, font = fontName, fontSize = 54, align = 'center' })
-    sceneGroup:insert(controlsText)
-    controlsText:setFillColor(0.8, 0.8, 0.8)
-    controlsText.anchorX = 0
-    controlsText.anchorY = 0
-    controlsText.x = 0
-    controlsText.y = 120
-
-    local startGameText = display.newText({ text = 'Fight!', width = W, font = fontName, fontSize = 90, align = 'center' })
-    sceneGroup:insert(startGameText)
-    startGameText:setFillColor(1, 0.4, 0.4)
-    startGameText.anchorX = 0.5
-    startGameText.anchorY = 1
-    startGameText.x = W / 2
-    startGameText.y = H - (H - (controlsText.y + controlsText.height)) / 2
-
-    startGameText:addEventListener("touch", function(event)
+    self.view:addEventListener("touch", function(event)
         if event.phase == 'ended' then
             composer.gotoScene('scenes.game')
             return true
@@ -60,18 +48,18 @@ Left mouse button
         return false
     end)
 
-    local startGameTextScaleFunc
-    startGameTextScaleFunc = function()
-        transition.scaleTo(startGameText, {
-            time = 1500,
-            xScale = 1.3,
-            yScale = 1.3,
+    local startGameScaleFunc
+    startGameScaleFunc = function()
+        transition.scaleTo(controls, {
+            time = 2500,
+            xScale = 1.07,
+            yScale = 1.07,
             onComplete = function()
-                transition.scaleTo(startGameText, { time = 1500, xScale = 1, yScale = 1, onComplete = startGameTextScaleFunc })
+                transition.scaleTo(controls, { time = 2500, xScale = 1, yScale = 1, onComplete = startGameScaleFunc })
             end
         })
     end
-    startGameTextScaleFunc()
+    startGameScaleFunc()
 end
 
 scene:addEventListener("create", scene)
