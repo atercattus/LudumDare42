@@ -1054,19 +1054,43 @@ function scene:updatePlayer(deltaTime)
     self:playerCheckCollisions()
 end
 
-function scene:ammoCollideAnim(ammo)
+function scene:explosion(posObj)
+    audio.play(self.soundBoom)
+
+    local explosionSequenceData = {
+        {
+            name = "boom",
+            frames = { 1, 2, 3, 4, 5, 6, 7 },
+            time = 500,
+            loopCount = 1,
+            loopDirection = "forward"
+        },
+    }
+    local explosionImage = display.newSprite(self.explosionImageSheet, explosionSequenceData)
+    self.levelGroup:insert(explosionImage)
+    explosionImage.x = posObj.x
+    explosionImage.y = posObj.y
+    explosionImage.xScale = 2
+    explosionImage.yScale = 2
+
+    explosionImage:addEventListener("sprite", function(event)
+        local thisSprite = event.target
+        if (event.phase == "ended") then
+            thisSprite:removeSelf()
+        end
+    end)
+
+    explosionImage:setSequence("boom")
+    explosionImage:play()
+end
+
+function scene:ammoCollideAnim(ammo, enemyOrPortal)
     if ammo.gunType ~= gunTypeRocketLauncher then
-        -- пока без всяких анимаций для оыбчных пушек
+        -- пока без особенностей для обычных пушек
         return
     end
 
-    audio.play(self.soundBoom)
-
-    local r = display.newCircle(self.levelGroup, ammo.x, ammo.y, rocketDamageRadius)
-    r.fill = { 1, 0.4, 0.4, 0.3 }
-    timer.performWithDelay(300, function()
-        r:removeSelf()
-    end)
+    self:explosion(enemyOrPortal)
 
     -- нужно нанести урон всем противникам в области
     local to_delete = {}
@@ -1101,7 +1125,7 @@ function scene:updateAmmo(ammo, deltaTime)
     local got_damage = {}
     for enemyIdx, enemy in ipairs(self.enemies) do
         if hasCollidedCircle(ammo, enemy) then
-            self:ammoCollideAnim(ammo) -- может удалять то, что было задано в got_damage
+            self:ammoCollideAnim(ammo, enemy) -- может удалять то, что было задано в got_damage
             got_damage[#got_damage + 1] = enemyIdx
             collided = true
         end
@@ -1114,7 +1138,7 @@ function scene:updateAmmo(ammo, deltaTime)
     local got_damage = {}
     for i, portal in ipairs(self.portals) do
         if hasCollidedCircle(ammo, portal) then
-            self:ammoCollideAnim(ammo) -- может удалять то, что было задано в got_damage
+            self:ammoCollideAnim(ammo, portal) -- может удалять то, что было задано в got_damage
             got_damage[#got_damage + 1] = i
             collided = true
         end
@@ -1313,6 +1337,15 @@ function scene:setupPoints()
     self.pointsImageSheet = graphics.newImageSheet("data/pointers.png", options)
 end
 
+function scene:setupExplosion()
+    local options = {
+        width = 64,
+        height = 64,
+        numFrames = 7,
+    }
+    self.explosionImageSheet = graphics.newImageSheet("data/explosion.png", options)
+end
+
 function scene:onEnterFrame(event)
     if self.lastEnterFrameTime == 0 then
         self.lastEnterFrameTime = system.getTimer()
@@ -1445,6 +1478,8 @@ function scene:reset()
     self.ammoBlocksImageSheet = nil
 
     self.enemyAmmoImageSheet = nil
+    self.pointsImageSheet = nil
+    self.explosionImageSheet = nil
 
     self.ammoBlocksIcons = {}
     self.ammoBlocksTexts = {}
@@ -1481,6 +1516,7 @@ scene:addEventListener("show", function(event)
         scene:setupEnemyAmmo()
 
         scene:setupPoints()
+        scene:setupExplosion()
 
         scene:setupBorder()
         scene:setupPlayer()
