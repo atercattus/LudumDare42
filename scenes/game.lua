@@ -553,6 +553,16 @@ function scene:spawnPortal(first)
 
     portal.lastTimeEnemySpawn = 0
 
+    -- указатель на портал
+    local pointerToPortal = display.newRect(0, 0, 32, 32)
+    self.levelGroup:insert(pointerToPortal)
+    portal.pointerToPortal = pointerToPortal
+    pointerToPortal.fill = { type = "image", sheet = self.pointsImageSheet, frame = 1 }
+    pointerToPortal.x = portal.x
+    pointerToPortal.y = portal.y
+    pointerToPortal.anchorX = 0.5
+    pointerToPortal.anchorY = 0.5
+
     self.portals[#self.portals + 1] = portal
 
     return portal
@@ -616,6 +626,15 @@ function scene:updatePortal(portal, deltaTime)
         portal.lastTimeEnemySpawn = currentTime
         self:spawnEnemy(portal)
     end
+
+    -- указание в сторону портала
+    local player = self.player
+    local angle = 90 - vectorToAngle(vector(portal.x, portal.y, player.x, player.y))
+    local pointer = portal.pointerToPortal
+    pointer.x = player.x
+    pointer.y = player.y
+    pointer.rotation = angle
+    self:moveTowards(pointer, portal, 120)
 end
 
 function scene:updatePortals(deltaTime)
@@ -887,6 +906,10 @@ function scene:portalDestroed(portalIdx)
             end
         end
     end
+
+    -- маркер, указывающий на портал, тоже больше не нужен
+    portal.pointerToPortal:removeSelf()
+    portal.pointerToPortal = nil
 
     self:dropAmmo(enemyTypePortal, portal)
 
@@ -1269,6 +1292,15 @@ function scene:setupEnemyAmmo()
     self.enemyAmmoImageSheet = graphics.newImageSheet("data/enemy_ammo.png", options)
 end
 
+function scene:setupPoints()
+    local options = {
+        width = 32,
+        height = 32,
+        numFrames = 1,
+    }
+    self.pointsImageSheet = graphics.newImageSheet("data/points.png", options)
+end
+
 function scene:onEnterFrame(event)
     if self.lastEnterFrameTime == 0 then
         self.lastEnterFrameTime = system.getTimer()
@@ -1435,6 +1467,8 @@ scene:addEventListener("show", function(event)
 
         scene:setupEnemies()
         scene:setupEnemyAmmo()
+
+        scene:setupPoints()
 
         scene:setupBorder()
         scene:setupPlayer()
