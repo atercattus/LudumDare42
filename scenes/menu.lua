@@ -35,17 +35,26 @@ Do not touch the Barrier]]
 
     local controls = display.newImageRect("data/controls.png", 512, 512)
     sceneGroup:insert(controls)
-    controls.x = W/2
+    controls.x = W / 2
     controls.y = howtoText.contentHeight + howtoText.y
     controls.anchorX = 0.5
     controls.anchorY = 0
 
-    self.view:addEventListener("touch", function(event)
-        if event.phase == 'ended' then
-            composer.gotoScene('scenes.game')
-            return true
+    scene.mouseReleased = false
+    scene.mouseClicked = false
+    self.view:addEventListener("mouse", function(event)
+        if event.isPrimaryButtonDown then
+            if scene.mouseReleased then
+                scene.mouseClicked = true
+            end
+        else
+            if not scene.mouseReleased then
+                scene.mouseReleased = true
+            elseif scene.mouseClicked then
+                composer.gotoScene('scenes.game')
+            end
         end
-        return false
+        return true
     end)
 
     local startGameScaleFunc
@@ -63,5 +72,10 @@ Do not touch the Barrier]]
 end
 
 scene:addEventListener("create", scene)
+
+scene:addEventListener("show", function(event)
+    scene.mouseReleased = false
+    scene.mouseClicked = false
+end)
 
 return scene
