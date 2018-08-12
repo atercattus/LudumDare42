@@ -557,8 +557,8 @@ function scene:spawnPortal(first)
 
     local portal = display.newImageRect(self.levelGroup, "data/portal.png", 128, 128)
     portal.name = "portal"
-    portal.xScale = 1.5
-    portal.yScale = 1.5
+    portal.xScale = 1.2
+    portal.yScale = 1.2
 
     portal.HP = portalHP
 
