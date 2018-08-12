@@ -995,6 +995,7 @@ function scene:playerCheckCollisions()
         if hasCollidedCircle(self.player, enemy) then
             self:playerGotDamage(self:getEnemyDamage(enemy))
             if enemy.enemyType == enemyTypeFast then
+                self:fastEnemyExplosion(self.player)
                 self:enemyDied(enemyIdx, true)
             end
             return
@@ -1123,6 +1124,34 @@ function scene:shotFire(posObj)
 
     scene.shotImage:setSequence("boom")
     scene.shotImage:play()
+end
+
+function scene:fastEnemyExplosion(posObj)
+    local explosionSequenceData = {
+        {
+            name = "boom",
+            frames = { 1, 2, 3, 4, 5, 6, 7 },
+            time = 500,
+            loopCount = 1,
+            loopDirection = "forward"
+        },
+    }
+    local explosionImage = display.newSprite(self.fastEnemyExplosionImageSheet, explosionSequenceData)
+    self.levelGroup:insert(explosionImage)
+    explosionImage.x = posObj.x
+    explosionImage.y = posObj.y
+    explosionImage.xScale = 2
+    explosionImage.yScale = 2
+
+    explosionImage:addEventListener("sprite", function(event)
+        local thisSprite = event.target
+        if (event.phase == "ended") then
+            thisSprite:removeSelf()
+        end
+    end)
+
+    explosionImage:setSequence("boom")
+    explosionImage:play()
 end
 
 function scene:ammoCollideAnim(ammo, enemyOrPortal)
@@ -1387,6 +1416,15 @@ function scene:setupExplosion()
     self.explosionImageSheet = graphics.newImageSheet("data/explosion.png", options)
 end
 
+function scene:setupFastEnemyExplosion()
+    local options = {
+        width = 64,
+        height = 64,
+        numFrames = 7,
+    }
+    self.fastEnemyExplosionImageSheet = graphics.newImageSheet("data/fast_enemy_explosion.png", options)
+end
+
 function scene:onEnterFrame(event)
     if self.lastEnterFrameTime == 0 then
         self.lastEnterFrameTime = system.getTimer()
@@ -1522,6 +1560,7 @@ function scene:reset()
     self.pointsImageSheet = nil
     self.explosionImageSheet = nil
     self.shotFireImageSheet = nil
+    self.fastEnemyExplosionImageSheet = nil
 
     self.ammoBlocksIcons = {}
     self.ammoBlocksTexts = {}
@@ -1559,6 +1598,7 @@ scene:addEventListener("show", function(event)
 
         scene:setupPoints()
         scene:setupExplosion()
+        scene:setupFastEnemyExplosion()
 
         scene:setupBorder()
         scene:setupPlayer()
