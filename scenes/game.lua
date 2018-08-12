@@ -220,6 +220,7 @@ function scene:onMouseEvent(event)
             local nextGunType = self.player.gun.gunType + ((event.scrollY < 0) and -1 or 1)
             self:switchGun(nextGunType)
         end
+        return
     end
 
     self.pressedKeys.mouseLeft = event.isPrimaryButtonDown
