@@ -590,7 +590,7 @@ function scene:spawnPortal(first)
     portal.lastTimeEnemySpawn = 0
 
     -- указатель на портал
-    local pointerToPortal = display.newRect(0, 0, 32, 32)
+    local pointerToPortal = display.newRect(0, 0, 64, 32)
     self.levelGroup:insert(pointerToPortal)
     portal.pointerToPortal = pointerToPortal
     pointerToPortal.fill = { type = "image", sheet = self.pointsImageSheet, frame = 1 }
@@ -674,7 +674,7 @@ function scene:updatePortal(portal, deltaTime)
     pointer.x = player.x
     pointer.y = player.y
     pointer.rotation = angle
-    self:moveTowards(pointer, portal, 120)
+    self:moveTowards(pointer, portal, 100)
 end
 
 function scene:updatePortals(deltaTime)
@@ -1416,7 +1416,7 @@ end
 
 function scene:setupPoints()
     local options = {
-        width = 32,
+        width = 64,
         height = 32,
         numFrames = 1,
     }
