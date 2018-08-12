@@ -411,7 +411,7 @@ function scene:playerDied()
     self.player.playerImage:setSequence("stay")
     self.player.playerImage:play()
 
-    local blur = display.newRect(self.view, 0, 0, self.W, self.H)
+    local blur = display.newRect(self.view, -self.W, -self.H, 3*self.W, 3*self.H)
     blur.anchorX = 0
     blur.anchorY = 0
     blur.alpha = 0
@@ -1181,7 +1181,7 @@ function scene:setupGunsAndAmmo()
         self.view:insert(icon)
         self.ammoBlocksIcons[gunType] = icon
         icon.fill = { type = "image", sheet = self.ammoBlocksImageSheet, frame = gunType }
-        icon.x = 10
+        icon.x = 0
         icon.y = 10 + (gunType - 1) * ammoBlockHeight * ammoIconScale
         icon.anchorX = 0
         icon.anchorY = 0
@@ -1212,7 +1212,7 @@ function scene:setupHeart()
         ammoBlockHeight * ammoIconScale)
     self.view:insert(self.heartIcon)
     self.heartIcon.fill = { type = "image", sheet = self.ammoBlocksImageSheet, frame = self.gunsCount + 1 }
-    self.heartIcon.x = 10
+    self.heartIcon.x = 0
     self.heartIcon.y = 10 + self.gunsCount * ammoBlockHeight * ammoIconScale
     self.heartIcon.anchorX = 0
     self.heartIcon.anchorY = 0
