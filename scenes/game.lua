@@ -418,7 +418,7 @@ function scene:playerDied()
     self.player.playerImage:setSequence("stay")
     self.player.playerImage:play()
 
-    local blur = display.newRect(self.view, -self.W, -self.H, 3*self.W, 3*self.H)
+    local blur = display.newRect(self.view, -self.W, -self.H, 3 * self.W, 3 * self.H)
     blur.anchorX = 0
     blur.anchorY = 0
     blur.alpha = 0
@@ -813,6 +813,11 @@ function scene:updateEnemies(deltaTime)
     local to_delete = {}
 
     for i, enemy in ipairs(self.enemies) do
+        -- поворот в сторону игрока
+        local playerInTheLeft = self.player.x < enemy.x
+        local scale = math.abs(enemy.xScale)
+        enemy.xScale = playerInTheLeft and -scale or scale
+
         if not self:isObjInsideBorder(enemy) then
             if enemy.enemyType == enemyTypeGuard then
                 -- Страж не гибнет от барьера, а как и портал движется с ним
