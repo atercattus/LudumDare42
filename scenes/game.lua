@@ -77,10 +77,12 @@ local gunsInfo = {
     },
 }
 
-local portalHP = 3
+local portalHP = 5
 
 local enemyGuardMaxDistance = 200 -- максимальное расстояние, на которое Страж отходит от своего портала
 local enemyShooterDistance = 500 -- расстояние, на котором стрелок старается держаться от игрока
+
+local enemyShootMaxDistance = 800 -- максимальное расстояние от врага до игрока, при котором враг будет стрелять (чтобы снаряды не летели через весь уровень)
 
 local enemyShooterShootInterval = 2000 -- как часто стрелок стреляет
 local enemyShooterShootSpeed = 400 -- скорость выстрелов стрелка
@@ -581,6 +583,10 @@ function scene:updatePortals(deltaTime)
 end
 
 function scene:enemyShotToPlayer(enemy)
+    if distanceBetween(enemy, self.player) > enemyShootMaxDistance then
+        return
+    end
+
     local ammo = display.newRect(0, 0, enemyAmmoWidth, enemyAmmoHeight)
     self.levelGroup:insert(ammo)
     ammo.name = "enemy_ammo"
@@ -704,7 +710,7 @@ function scene:dropAmmo(enemyType, enemyObj)
     end
 
     if not gunType then
-        if randomInt(100) >= 95 then
+        if randomInt(100) >= 97 then
             -- иногда можно и сердечко выкинуть
             gunType = gunTypeDropHeart
             ammoQuantity = 1
