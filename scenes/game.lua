@@ -1147,6 +1147,7 @@ function scene:updateAmmoDrops(deltaTime)
                 self.playerHP = self.playerHP + drop.quantity
                 self:updateHeart()
             else
+                audio.play(self.soundAmmo)
                 self.ammoAllowed[drop.gunType] = self.ammoAllowed[drop.gunType] + drop.quantity
                 self:updateAmmoAllowed(drop.gunType)
             end
@@ -1301,6 +1302,7 @@ function scene:create(event)
     self.soundBoom = audio.loadSound("data/boom.wav")
     self.soundHit = audio.loadSound("data/hit.wav")
     self.soundHeart = audio.loadSound("data/heart.wav")
+    self.soundAmmo = audio.loadSound("data/heart.wav") -- пока такой звук
     self.soundExtension = audio.loadSound("data/extension.wav")
 
     self.soundGuns = {}
