@@ -555,12 +555,8 @@ end
 function scene:spawnPortal(first)
     self.portalsCreatedForAllTime = self.portalsCreatedForAllTime + 1
 
-    local portal = display.newImageRect(self.levelGroup, "data/portal.png", 64, 128)
+    local portal = display.newImageRect(self.levelGroup, "data/portal.png", 128, 128)
     portal.name = "portal"
-    portal.xScale = 2.2
-    portal.yScale = 2.2
-    portal.fill.effect = "filter.swirl"
-    portal.fill.effect.intensity = randomInt(10) / 10
 
     portal.HP = portalHP
 
