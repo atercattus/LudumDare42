@@ -2,14 +2,7 @@ settings =
 {
 	orientation =
 	{
-		default = "",
+		default = "landscapeRight",
 		supported = { "landscapeRight", "landscapeLeft" },
 	},
-  android =
-  {
-      usesPermissions =
-      {
-          "android.permission.VIBRATE",
-      },
-  },
 }
