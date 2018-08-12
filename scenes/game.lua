@@ -898,10 +898,10 @@ function scene:updateEnemies(deltaTime)
     end
 end
 
-function scene:makeSomeBlood(objPos, isPortal)
+function scene:makeSomeBlood(obj, isPortal)
     local bloodImage = display.newImageRect(self.levelGroup, "data/blood.png", 64, 64)
-    bloodImage.x = objPos.x
-    bloodImage.y = objPos.y
+    bloodImage.x = obj.x
+    bloodImage.y = obj.y
     bloodImage.anchorX = 0.5
     bloodImage.anchorY = 0.5
 
@@ -915,8 +915,19 @@ function scene:makeSomeBlood(objPos, isPortal)
         bloodImage.fill.effect.intensity = 0.2
     end
 
+    local saveFillEffect
+    if obj.fill ~= nil then
+        saveFillEffect = obj.fill.effect
+        obj.fill.effect = "filter.brightness"
+        obj.fill.effect.intensity = 0.9
+    end
+
     timer.performWithDelay(100, function()
         bloodImage:removeSelf()
+
+        if (saveFillEffect ~= nil) and (obj.fill ~= nil) then
+            obj.fill.effect = saveFillEffect
+        end
     end)
 end
 
