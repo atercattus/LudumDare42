@@ -28,11 +28,11 @@ local enemyAmmoHeight = 32
 
 local ammoIconScale = 2.5
 
-local ammoWidth = 16
-local ammoHeight = 6
+local ammoWidth = 32
+local ammoHeight = 16
 
-local ammoBlockWidth = 18
-local ammoBlockHeight = 19
+local ammoBlockWidth = 24
+local ammoBlockHeight = 32
 
 local enemyWidth = 128
 local enemyHeight = 128
@@ -68,10 +68,10 @@ local gunsInfo = {
     },
     -- расстояние от рукоятки до конца ствола (чтобы снаряд вылетал откуда надо)
     barrelLengths = {
-        [gunTypePistol] = 64,
-        [gunTypeShotgun] = 70,
-        [gunTypeMachinegun] = 116,
-        [gunTypeRocketLauncher] = 108,
+        [gunTypePistol] = 40,
+        [gunTypeShotgun] = 60,
+        [gunTypeMachinegun] = 70,
+        [gunTypeRocketLauncher] = 80,
     },
     -- урон от оружия
     damages = {
@@ -516,8 +516,8 @@ function scene:setupPlayer()
     local gun = display.newRect(0, 0, 140, 50)
     gun.name = "player_gun"
     gun.fill = { type = "image", sheet = self.gunsImageSheet, frame = 1 }
-    gun.anchorX = 0.2
-    gun.anchorY = 0.2
+    gun.anchorX = 0.3
+    gun.anchorY = 0.4
 
     self.player = display.newGroup()
     self.levelGroup:insert(self.player)
@@ -1196,8 +1196,8 @@ end
 function scene:setupGunsAndAmmo()
     self.gunsCount = 4
     local options = {
-        width = 140,
-        height = 50,
+        width = 148,
+        height = 64,
         numFrames = self.gunsCount,
     }
     self.gunsImageSheet = graphics.newImageSheet("data/guns.png", options)
@@ -1246,7 +1246,7 @@ function scene:setupGunsAndAmmo()
         text.anchorX = 0
         text.anchorY = 0
         text.x = icon.x + icon.contentWidth + 10
-        text.y = icon.y
+        text.y = icon.y * 1.03
 
         self.ammoBlocksTexts[gunType] = text
 
@@ -1277,7 +1277,7 @@ function scene:setupHeart()
     self.heartIconText.anchorX = 0
     self.heartIconText.anchorY = 0
     self.heartIconText.x = self.heartIcon.x + self.heartIcon.contentWidth + 10
-    self.heartIconText.y = self.heartIcon.y
+    self.heartIconText.y = self.heartIcon.y * 1.03
 
     self:updateHeart()
 end
