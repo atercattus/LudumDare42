@@ -489,7 +489,7 @@ function scene:setupPlayer()
         },
         {
             name = "run",
-            frames = { 2, 4, 1 },
+            frames = { 2, 1, 4, 1 },
             time = 350,
             loopCount = 0,
             loopDirection = "forward"
