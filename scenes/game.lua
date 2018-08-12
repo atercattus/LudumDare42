@@ -704,7 +704,7 @@ function scene:dropAmmo(enemyType, enemyObj)
     end
 
     if not gunType then
-        if (self.playerHP < 5) and (randomInt(100) >= 90) then
+        if randomInt(100) >= 95 then
             -- иногда можно и сердечко выкинуть
             gunType = gunTypeDropHeart
             ammoQuantity = 1
