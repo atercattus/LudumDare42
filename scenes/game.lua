@@ -638,6 +638,10 @@ function scene:spawnEnemy(portal)
 
     self.enemies[#self.enemies + 1] = enemy
 
+    -- плавное появление
+    enemy.alpha = 0
+    transition.to(enemy, { time = 400, alpha = 1 })
+
     return enemy
 end
 
