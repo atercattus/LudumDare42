@@ -266,19 +266,33 @@ function scene:setupScores()
         text = "",
         width = self.W,
         font = fontName,
-        fontSize = 42,
-        align = 'left',
+        fontSize = 48,
+        align = 'center',
     })
     self.scoresText:setFillColor(1, 1, 0.4)
     self.scoresText.anchorX = 0.5
     self.scoresText.anchorY = 0
-    self.scoresText.x = self.W * 4 / 3 - 100
+    self.scoresText.x = self.W / 2
     self.scoresText.y = 0
+
+    self.raduisText = display.newText({
+        parent = self.view,
+        text = "",
+        width = self.W,
+        font = fontName,
+        fontSize = 42,
+        align = 'right',
+    })
+    self.raduisText:setFillColor(1, 1, 0.4)
+    self.raduisText.anchorX = 1
+    self.raduisText.anchorY = 0
+    self.raduisText.x = self.W
+    self.raduisText.y = 0
 end
 
 function scene:updateScores()
-    self.scoresText.text = "Radius: " .. round(self.borderRadius)
-            .. "\nScore: " .. tostring(self.totalScore)
+    self.scoresText.text = "Score: " .. tostring(self.totalScore)
+    self.raduisText.text = "Radius: " .. round(self.borderRadius)
 end
 
 function scene:isObjInsideBorder(obj, customSize)
@@ -1536,6 +1550,7 @@ function scene:reset()
     self.ammoDrops = {}
     self.enemyAmmoInFlight = {}
     self.scoresText = nil
+    self.raduisText = nil
 
     self.portalsCreatedForAllTime = 0
     self.totalScore = 0
