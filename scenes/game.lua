@@ -500,6 +500,8 @@ function scene:playerGotDamage(damage)
     -- даю игроку при получении урона неуязвимость на секунду
     self.playerInvulnBefore = currentTime + 1000
 
+    self:makeSomeBlood(self.player)
+
     self.playerHP = math.max(0, self.playerHP - damage)
     audio.play(self.soundHit)
     self:updateHeart()
@@ -896,6 +898,28 @@ function scene:updateEnemies(deltaTime)
     end
 end
 
+function scene:makeSomeBlood(objPos, isPortal)
+    local bloodImage = display.newImageRect(self.levelGroup, "data/blood.png", 64, 64)
+    bloodImage.x = objPos.x
+    bloodImage.y = objPos.y
+    bloodImage.anchorX = 0.5
+    bloodImage.anchorY = 0.5
+
+    local scale = randomInt(80, 120) / 100
+    bloodImage.xScale = scale
+    bloodImage.yScale = scale
+    bloodImage.rotation = randomInt(360)
+
+    if isPortal then
+        bloodImage.fill.effect = "filter.emboss"
+        bloodImage.fill.effect.intensity = 0.2
+    end
+
+    timer.performWithDelay(100, function()
+        bloodImage:removeSelf()
+    end)
+end
+
 function scene:enemyGotDamage(enemyIdx, damage)
     local enemy = self.enemies[enemyIdx]
 
@@ -903,6 +927,8 @@ function scene:enemyGotDamage(enemyIdx, damage)
         -- похоже что этого врага уже и так разорвало ракетницей
         return
     end
+
+    self:makeSomeBlood(enemy)
 
     if enemy.enemyType == enemyTypeGuard then
         -- страж портала неуязвим
@@ -990,6 +1016,8 @@ function scene:portalGotDamage(portalIdx, damage)
         -- похоже что этот портал уже и так разорвало ракетницей
         return
     end
+
+    self:makeSomeBlood(portal, true)
 
     local HP = portal.HP - damage
     if HP <= 0 then
