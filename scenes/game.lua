@@ -34,6 +34,9 @@ local ammoHeight = 6
 local ammoBlockWidth = 18
 local ammoBlockHeight = 19
 
+local enemyWidth = 128
+local enemyHeight = 128
+
 local gunTypePistol = 1
 local gunTypeShotgun = 2
 local gunTypeMachinegun = 3
@@ -310,15 +313,24 @@ function scene:moveForward(obj, delta)
     obj.y = pos.y
 end
 
-function scene:moveTowards(obj, target, delta)
+function scene:calcMoveTowardsPosition(obj, target, delta)
     local vec = vector(obj.x, obj.y, target.x, target.y)
     local vecLen = vectorLen(vec)
-    if vecLen == 0 then
-        return
+
+    local pos = { x = obj.x, y = obj.y }
+
+    if vecLen ~= 0 then
+        pos.x = pos.x + delta * (vec.x / vecLen)
+        pos.y = pos.y + delta * (vec.y / vecLen)
     end
 
-    obj.x = obj.x + delta * (vec.x / vecLen)
-    obj.y = obj.y + delta * (vec.y / vecLen)
+    return pos
+end
+
+function scene:moveTowards(obj, target, delta)
+    local pos = self:calcMoveTowardsPosition(obj, target, delta)
+    obj.x = pos.x
+    obj.y = pos.y
 end
 
 function scene:updateAmmoAllowed(gunType)
@@ -535,7 +547,7 @@ end
 function scene:spawnEnemy(portal)
     local enemyType = self:getNewEnemyType(portal)
 
-    local enemy = display.newRect(0, 0, 128, 128)
+    local enemy = display.newRect(0, 0, enemyWidth, enemyHeight)
     self.levelGroup:insert(enemy)
 
     enemy.HP = enemyInfo.HPs[enemyType]
@@ -556,8 +568,8 @@ function scene:spawnEnemy(portal)
     enemy.anchorY = 0.5
 
     -- ToDo: нужно спавнить в сторону центра
-    enemy.x = portal.x + randomInt(-1, 1) * 128
-    enemy.y = portal.y + randomInt(-1, 1) * 128
+    enemy.x = portal.x + randomInt(-1, 1) * enemyWidth
+    enemy.y = portal.y + randomInt(-1, 1) * enemyHeight
 
     self.enemies[#self.enemies + 1] = enemy
 
@@ -651,14 +663,20 @@ function scene:updateEnemy(enemy, deltaTime)
 
         -- Стрелки стараются держаться на расстоянии
 
-        local deltaDist = enemySpeed * deltaTime
-
         local toPlayerDist = distanceBetween(enemy, self.player)
-        local toCentreDist = vectorLen(enemy) + deltaDist
-        if (toPlayerDist < (enemyShooterDistance * enemy.distanceMult)) and (toCentreDist < self.borderRadius) then
-            -- отходит от игрока
-            self:moveTowards(enemy, { x = self.player.x, y = self.player.y }, -deltaDist)
-            return
+
+        if toPlayerDist < (enemyShooterDistance * enemy.distanceMult) then
+            -- Если до игрока слишком близко, то смотрим,
+            --   если мы отойдем подальше, то не окажемся ли у барьера
+            local deltaDist = enemySpeed * deltaTime
+            local newPos = self:calcMoveTowardsPosition(enemy, { x = self.player.x, y = self.player.y }, -deltaDist)
+
+            local newPosRadius = vectorLen(newPos)
+            if (newPosRadius + enemyWidth) < self.borderRadius then
+                -- отходит от игрока
+                self:moveTowards(enemy, { x = self.player.x, y = self.player.y }, -deltaDist)
+                return
+            end
         end
     end
 
