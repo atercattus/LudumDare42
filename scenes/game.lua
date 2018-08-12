@@ -419,6 +419,10 @@ function scene:playerDied()
     self.player.playerImage:setSequence("stay")
     self.player.playerImage:play()
 
+    -- оружие "выпадает из рук" и сам герой падает на землю
+    self.player.gun.isVisible = false
+    transition.to(self.player, { time = 1000, rotation = 90 })
+
     local blur = display.newRect(self.view, -self.W, -self.H, 3 * self.W, 3 * self.H)
     blur.anchorX = 0
     blur.anchorY = 0
