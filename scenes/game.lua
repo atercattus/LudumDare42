@@ -1387,11 +1387,25 @@ function scene:setupHeart()
         fontSize = 42,
         align = 'left',
     })
-    self.heartIconText:setFillColor(1, 1, 0.4)
+    self.heartIconText:setFillColor(1, 0.9, 0.9)
     self.heartIconText.anchorX = 0
     self.heartIconText.anchorY = 0
     self.heartIconText.x = self.heartIcon.x + self.heartIcon.contentWidth + 10
     self.heartIconText.y = self.heartIcon.y * 1.03
+
+    -- анимация биения
+    local scaleFunc
+    scaleFunc = function()
+        transition.scaleTo(self.heartIcon, {
+            time = 800,
+            xScale = 1.1,
+            yScale = 1.1,
+            onComplete = function()
+                transition.scaleTo(self.heartIcon, { time = 800, xScale = 1, yScale = 1, onComplete = scaleFunc })
+            end
+        })
+    end
+    scaleFunc()
 
     self:updateHeart()
 end
