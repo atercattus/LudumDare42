@@ -1521,8 +1521,6 @@ function scene:create(event)
     self.soundAmmo = audio.loadSound("data/heart.wav") -- пока такой звук
     self.soundExtension = audio.loadSound("data/extension.wav")
 
-    self.soundMelody = audio.loadSound("data/melody.wav")
-
     self.soundGuns = {}
     self.soundGuns[gunTypePistol] = audio.loadSound("data/pistol.wav")
     self.soundGuns[gunTypeShotgun] = audio.loadSound("data/shotgun.wav")
@@ -1537,7 +1535,6 @@ function scene:destroy(event)
     audio.dispose(self.soundHit)
     audio.dispose(self.soundHeart)
     audio.dispose(self.soundExtension)
-    audio.dispose(self.soundMelody)
 
     for _, sound in ipairs(self.soundGuns) do
         audio.dispose(sound)
@@ -1637,16 +1634,13 @@ function scene:reset()
     self.lastEnterFrameTime = 0
 
     self.shotImage = nil
-
-    if self.melodyChannel ~= nil then
-        audio.stop(self.melodyChannel)
-        self.melodyChannel = nil
-    end
 end
 
 scene:addEventListener("show", function(event)
     if (event.phase == "will") then
         scene:reset()
+
+        scene.soundMelody = audio.loadSound("data/melody.wav")
 
         scene.melodyChannel = audio.play(scene.soundMelody, { loops = -1 })
         audio.setVolume(0.75, { channel = scene.melodyChannel })
@@ -1693,6 +1687,8 @@ scene:addEventListener("hide", function(event)
             audio.stop(scene.melodyChannel)
             scene.melodyChannel = nil
         end
+
+        audio.dispose(scene.soundMelody)
 
         Runtime:removeEventListener("enterFrame", onEnterFrame)
         Runtime:removeEventListener("key", onKey)
