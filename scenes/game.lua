@@ -889,7 +889,7 @@ function scene:enemyDied(enemyIdx, denyDropAmmo)
         self:dropAmmo(enemy.enemyType, enemy)
     end
 
-    self.totalScore = self.totalScore + 1 -- пока на всех одинаково
+    self.totalScore = self.totalScore + enemyInfo.damages[enemy.enemyType]
 
     table.remove(self.enemies, enemyIdx)
     transition.to(enemy, {
@@ -1021,7 +1021,7 @@ function scene:portalDestroed(portalIdx)
     portal:removeSelf()
     table.remove(self.portals, portalIdx)
 
-    self.totalScore = self.totalScore + 50
+    self.totalScore = self.totalScore + 100 -- да.... хардкод
 
     self.playerSpeed = math.min(700, self.playerSpeed + 20)
 
