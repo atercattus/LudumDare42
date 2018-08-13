@@ -20,7 +20,7 @@ local hasCollidedCircle = utils.hasCollidedCircle
 
 local fontName = 'data/ErikaOrmig.ttf'
 
-local borderRadiusSpeed = 40
+local borderRadiusSpeed = 35
 
 local damageFromPortal = 3
 local damageFromBorder = 99999
