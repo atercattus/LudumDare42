@@ -56,7 +56,7 @@ local gunsInfo = {
     -- интервалы между выстрелами каждой пушки
     shotIntervals = {
         [gunTypePistol] = 200,
-        [gunTypeShotgun] = 500,
+        [gunTypeShotgun] = 450,
         [gunTypeMachinegun] = 100,
         [gunTypeRocketLauncher] = 700,
     },
@@ -621,9 +621,11 @@ function scene:getNewEnemyType(portal)
     local rand = 100 - randomInt(100)
     -- ToDo: увеличивать вероятность выпадения более сложных противников с развитием
 
-    if (self.portalsCreatedForAllTime > 3) and (not portal.guard) and (rand < 30) then
+    local level = self.portalsCreatedForAllTime
+
+    if (level > 3) and (not portal.guard) and (rand < 30) then
         return enemyTypeGuard
-    elseif rand < 10 then
+    elseif (level > 3) and (rand < 10) then
         return enemyTypeShooter
     elseif rand < 20 then
         return enemyTypeFast
@@ -800,13 +802,13 @@ function scene:dropAmmo(enemyType, enemyObj)
         local rnd = 100 - randomInt(100)
         if rnd < 70 then
             gunType = gunTypeRocketLauncher
-            ammoQuantity = 5
+            ammoQuantity = 3
         elseif rnd < 15 then
             gunType = gunTypeMachinegun
-            ammoQuantity = 30
+            ammoQuantity = 35
         else
             gunType = gunTypeShotgun
-            ammoQuantity = 15
+            ammoQuantity = 20
         end
     elseif enemyType == enemyTypeShooter then
         local rnd = 100 - randomInt(100)
@@ -880,10 +882,16 @@ function scene:enemyDied(enemyIdx, denyDropAmmo)
         self:dropAmmo(enemy.enemyType, enemy)
     end
 
-    enemy:removeSelf()
-    table.remove(self.enemies, enemyIdx)
-
     self.totalScore = self.totalScore + 1 -- пока на всех одинаково
+
+    table.remove(self.enemies, enemyIdx)
+    transition.to(enemy, {
+        time = 200,
+        alpha = 0,
+        onComplete = function()
+            enemy:removeSelf()
+        end,
+    })
 end
 
 function scene:updateEnemies(deltaTime)
