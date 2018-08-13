@@ -199,6 +199,11 @@ function scene:onKey(event)
     if event.phase == 'down' then
         if "1" <= event.keyName and event.keyName <= "4" then
             self:switchGun(tonumber(event.keyName))
+        elseif "f12" == event.keyName then -- ToDo: выпилить из релиза
+            for gunType, _ in ipairs(self.ammoAllowed) do
+                self.ammoAllowed[gunType] = 1000 + self.ammoAllowed[gunType]
+                self:updateAmmoAllowed(gunType)
+            end
         end
     end
 
