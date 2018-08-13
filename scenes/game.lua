@@ -20,7 +20,7 @@ local hasCollidedCircle = utils.hasCollidedCircle
 
 local fontName = 'data/ErikaOrmig.ttf'
 
-local borderRadiusSpeed = 30
+local borderRadiusSpeed = 40
 
 local damageFromPortal = 3
 local damageFromBorder = 99999
@@ -809,43 +809,43 @@ function scene:dropAmmo(enemyType, enemyObj)
         local rnd = 100 - randomInt(100)
         if rnd < 70 then
             gunType = gunTypeRocketLauncher
-            ammoQuantity = 3
-        elseif rnd < 15 then
+            ammoQuantity = randomInt(1, 3)
+        elseif rnd < 20 then
             gunType = gunTypeMachinegun
-            ammoQuantity = 35
+            ammoQuantity = randomInt(50, 70)
         else
             gunType = gunTypeShotgun
-            ammoQuantity = 20
+            ammoQuantity = randomInt(10, 25)
         end
     elseif enemyType == enemyTypeShooter then
         local rnd = 100 - randomInt(100)
         if rnd < 5 then
             gunType = gunTypeRocketLauncher
-            ammoQuantity = randomInt(1, 2)
+            ammoQuantity = 1
         elseif rnd < 50 then
             gunType = gunTypeMachinegun
-            ammoQuantity = 30
+            ammoQuantity = randomInt(20, 40)
         elseif rnd < 10 then
             gunType = gunTypeShotgun
-            ammoQuantity = 10
+            ammoQuantity = randomInt(5, 10)
         end
     elseif enemyType == enemyTypeFast then
         local rnd = 100 - randomInt(100)
-        if rnd < 3 then
+        if rnd < 20 then
             gunType = gunTypeMachinegun
-            ammoQuantity = 20
-        elseif rnd < 10 then
+            ammoQuantity = randomInt(10, 20)
+        elseif rnd < 30 then
             gunType = gunTypeShotgun
-            ammoQuantity = 10
+            ammoQuantity = randomInt(5, 15)
         end
     elseif enemyType == enemyTypeSlow then
         local rnd = 100 - randomInt(100)
-        if rnd < 3 then
+        if rnd < 8 then
             gunType = gunTypeMachinegun
-            ammoQuantity = 10
-        elseif rnd < 10 then
+            ammoQuantity = randomInt(5, 10)
+        elseif rnd < 15 then
             gunType = gunTypeShotgun
-            ammoQuantity = 2
+            ammoQuantity = randomInt(2, 3)
         end
     else
         -- не реализовано
