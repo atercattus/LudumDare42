@@ -506,13 +506,13 @@ function scene:playerGotDamage(damage)
     -- даю игроку при получении урона неу€звимость на секунду
     self.playerInvulnBefore = currentTime + 1000
 
-    self:makeSomeBlood(self.player)
-
     self.playerHP = math.max(0, self.playerHP - damage)
     audio.play(self.soundHit)
     self:updateHeart()
     if self.playerHP == 0 then
         self:playerDied()
+    else
+        self:makeSomeBlood(self.player)
     end
 end
 
@@ -943,8 +943,6 @@ function scene:enemyGotDamage(enemyIdx, damage)
         return
     end
 
-    self:makeSomeBlood(enemy, true)
-
     if enemy.enemyType == enemyTypeGuard then
         -- страж портала неу€звим
         return
@@ -955,6 +953,7 @@ function scene:enemyGotDamage(enemyIdx, damage)
         self:enemyDied(enemyIdx)
     else
         enemy.HP = HP
+        self:makeSomeBlood(enemy, true)
     end
 end
 
@@ -1032,13 +1031,12 @@ function scene:portalGotDamage(portalIdx, damage)
         return
     end
 
-    self:makeSomeBlood(portal, true)
-
     local HP = portal.HP - damage
     if HP <= 0 then
         self:portalDestroed(portalIdx)
     else
         portal.HP = HP
+        self:makeSomeBlood(portal, true)
     end
 end
 
