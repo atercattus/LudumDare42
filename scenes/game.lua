@@ -20,6 +20,8 @@ local hasCollidedCircle = utils.hasCollidedCircle
 
 local fontName = 'data/ErikaOrmig.ttf'
 
+local borderRadiusSpeed = 30
+
 local damageFromPortal = 3
 local damageFromBorder = 99999
 
@@ -77,7 +79,7 @@ local gunsInfo = {
     -- урон от оружия
     damages = {
         [gunTypePistol] = 4,
-        [gunTypeShotgun] = 2,
+        [gunTypeShotgun] = 3,
         [gunTypeMachinegun] = 5,
         [gunTypeRocketLauncher] = 10,
     },
@@ -525,7 +527,7 @@ function scene:playerGotDamage(damage)
 end
 
 function scene:updateBorderRadius(deltaTime)
-    self.borderRadius = self.borderRadius - self.borderRadiusSpeed * deltaTime
+    self.borderRadius = self.borderRadius - borderRadiusSpeed * deltaTime
     if self.borderRadius < 0 then
         self.borderRadius = 0
     end
@@ -705,7 +707,7 @@ end
 function scene:updatePortals(deltaTime)
     for i, portal in ipairs(self.portals) do
         if not self:isObjInsideBorder(portal) then
-            self:moveTo(portal, { x = 0, y = 0 }, self.borderRadiusSpeed, deltaTime)
+            self:moveTo(portal, { x = 0, y = 0 }, borderRadiusSpeed, deltaTime)
         end
         self:updatePortal(portal, deltaTime)
     end
@@ -911,7 +913,7 @@ function scene:updateEnemies(deltaTime)
         if not self:isObjInsideBorder(enemy) then
             if enemy.enemyType == enemyTypeGuard then
                 -- Страж не гибнет от барьера, а как и портал движется с ним
-                self:moveTo(enemy, { x = 0, y = 0 }, self.borderRadiusSpeed, deltaTime)
+                self:moveTo(enemy, { x = 0, y = 0 }, borderRadiusSpeed, deltaTime)
             else
                 to_delete[#to_delete + 1] = i
             end
@@ -1646,7 +1648,6 @@ function scene:reset()
     self.gameInPause = false
 
     self.borderRadius = 800
-    self.borderRadiusSpeed = 50
     self.playerSpeed = 400
 
     self.enemyImageSheet = nil
