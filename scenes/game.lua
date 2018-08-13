@@ -232,6 +232,11 @@ function scene:onMouseEvent(event)
             self.mouseScrollLastTime = currentTime
 
             local nextGunType = self.player.gun.gunType + ((event.scrollY < 0) and -1 or 1)
+            if nextGunType < gunTypePistol then
+                nextGunType = gunTypeMaxValue
+            elseif nextGunType > gunTypeMaxValue then
+                nextGunType = gunTypePistol
+            end
             self:switchGun(nextGunType)
         end
         return
