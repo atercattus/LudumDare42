@@ -46,7 +46,7 @@ local gunTypeMaxValue = gunTypeRocketLauncher
 local gunTypeDropHeart = gunTypeMaxValue + 1 -- костыль для выпадения сердечек
 
 local rocketDamageRadius = 300
-local explosionSize = 64
+local explosionImageSize = 64
 
 local groundSize = 1024
 
@@ -55,7 +55,7 @@ local gunsInfo = {
     lastShots = {},
     -- интервалы между выстрелами каждой пушки
     shotIntervals = {
-        [gunTypePistol] = 150,
+        [gunTypePistol] = 200,
         [gunTypeShotgun] = 500,
         [gunTypeMachinegun] = 100,
         [gunTypeRocketLauncher] = 700,
@@ -76,14 +76,14 @@ local gunsInfo = {
     },
     -- урон от оружия
     damages = {
-        [gunTypePistol] = 1,
+        [gunTypePistol] = 4,
         [gunTypeShotgun] = 2,
-        [gunTypeMachinegun] = 2,
+        [gunTypeMachinegun] = 5,
         [gunTypeRocketLauncher] = 10,
     },
 }
 
-local portalHP = 5
+local portalHP = 20
 
 local enemyGuardMaxDistance = 270 -- максимальное расстояние, на которое Страж отходит от своего портала
 local enemyShooterDistance = 500 -- расстояние, на котором стрелок старается держаться от игрока
@@ -118,8 +118,8 @@ local enemyInfo = {
     },
     HPs = {
         [enemyTypeSlow] = 2,
-        [enemyTypeFast] = 1,
-        [enemyTypeShooter] = 3,
+        [enemyTypeFast] = 5,
+        [enemyTypeShooter] = 4,
         [enemyTypeGuard] = 99999, -- он програмно неуязвим
     },
     scales = {
@@ -204,6 +204,9 @@ function scene:onKey(event)
                 self.ammoAllowed[gunType] = 1000 + self.ammoAllowed[gunType]
                 self:updateAmmoAllowed(gunType)
             end
+        elseif "f11" == event.keyName then -- ToDo: выпилить из релиза
+            self.playerHP = self.playerHP + 1000
+            self:updateHeart()
         end
     end
 
@@ -669,10 +672,15 @@ function scene:spawnEnemy(portal)
     return enemy
 end
 
+function scene:portalSpawnInterval()
+    local cnt = math.max(1, math.floor(self.portalsCreatedForAllTime / 10))
+    return 1000 * cnt
+end
+
 function scene:updatePortal(portal, deltaTime)
     local currentTime = system.getTimer()
     local delta = currentTime - portal.lastTimeEnemySpawn
-    if delta > 1000 then -- ToDo: динамический период спавна
+    if delta > self:portalSpawnInterval() then
         portal.lastTimeEnemySpawn = currentTime
         self:spawnEnemy(portal)
     end
@@ -935,7 +943,8 @@ function scene:makeSomeBlood(obj, isEnemy)
     end)
 end
 
-function scene:enemyGotDamage(enemyIdx, damage)
+function scene:enemyGotDamage(enemyIdx, ammo)
+    local damage = ammo.damage
     local enemy = self.enemies[enemyIdx]
 
     if enemy == nil then
@@ -945,6 +954,7 @@ function scene:enemyGotDamage(enemyIdx, damage)
 
     if enemy.enemyType == enemyTypeGuard then
         -- страж портала неуязвим
+        self:makeSomeBlood(enemy, true)
         return
     end
 
@@ -967,10 +977,8 @@ function scene:getNewPortslsCount()
         return 3
     elseif cnt <= 20 then
         return 4
-    elseif cnt <= 30 then
-        return 5
     else
-        return 6
+        return 5
     end
 end
 
@@ -1023,7 +1031,8 @@ function scene:portalDestroed(portalIdx)
     end
 end
 
-function scene:portalGotDamage(portalIdx, damage)
+function scene:portalGotDamage(portalIdx, ammo)
+    local damage = ammo.damage
     local portal = self.portals[portalIdx]
 
     if portal == nil then
@@ -1147,8 +1156,8 @@ function scene:explosion(posObj)
     self.levelGroup:insert(explosionImage)
     explosionImage.x = posObj.x
     explosionImage.y = posObj.y
-    explosionImage.xScale = rocketDamageRadius / explosionSize
-    explosionImage.yScale = rocketDamageRadius / explosionSize
+    explosionImage.xScale = rocketDamageRadius / explosionImageSize
+    explosionImage.yScale = rocketDamageRadius / explosionImageSize
 
     explosionImage:addEventListener("sprite", function(event)
         local thisSprite = event.target
@@ -1216,7 +1225,7 @@ end
 function scene:ammoCollideAnim(ammo, enemyOrPortal)
     if ammo.gunType ~= gunTypeRocketLauncher then
         -- пока без особенностей для обычных пушек
-        return
+        return false
     end
 
     self:explosion(enemyOrPortal)
@@ -1231,7 +1240,7 @@ function scene:ammoCollideAnim(ammo, enemyOrPortal)
 
     for i = #to_delete, 1, -1 do
         local enemyIdx = to_delete[i]
-        self:enemyGotDamage(enemyIdx, ammo.damage)
+        self:enemyGotDamage(enemyIdx, ammo)
     end
 
     local to_delete = {}
@@ -1243,8 +1252,10 @@ function scene:ammoCollideAnim(ammo, enemyOrPortal)
 
     for i = #to_delete, 1, -1 do
         local enemyIdx = to_delete[i]
-        self:portalGotDamage(enemyIdx, ammo.damage)
+        self:portalGotDamage(enemyIdx, ammo)
     end
+
+    return true
 end
 
 -- updateAmmo вернет true, если пулю нужно удалять
@@ -1254,27 +1265,29 @@ function scene:updateAmmo(ammo, deltaTime)
     local got_damage = {}
     for enemyIdx, enemy in ipairs(self.enemies) do
         if hasCollidedCircle(ammo, enemy) then
-            self:ammoCollideAnim(ammo, enemy) -- может удалять то, что было задано в got_damage
-            got_damage[#got_damage + 1] = enemyIdx
+            if not self:ammoCollideAnim(ammo, enemy) then -- может удалять то, что было задано в got_damage
+                got_damage[#got_damage + 1] = enemyIdx
+            end
             collided = true
         end
     end
     for i = #got_damage, 1, -1 do
         local enemyIdx = got_damage[i]
-        self:enemyGotDamage(enemyIdx, ammo.damage)
+        self:enemyGotDamage(enemyIdx, ammo)
     end
 
     local got_damage = {}
     for i, portal in ipairs(self.portals) do
         if hasCollidedCircle(ammo, portal) then
-            self:ammoCollideAnim(ammo, portal) -- может удалять то, что было задано в got_damage
-            got_damage[#got_damage + 1] = i
+            if not self:ammoCollideAnim(ammo, portal) then -- может удалять то, что было задано в got_damage
+                got_damage[#got_damage + 1] = i
+            end
             collided = true
         end
     end
     for i = #got_damage, 1, -1 do
         local idx = got_damage[i]
-        self:portalGotDamage(idx, ammo.damage)
+        self:portalGotDamage(idx, ammo)
     end
 
     if collided then
@@ -1482,8 +1495,8 @@ end
 
 function scene:setupExplosion()
     local options = {
-        width = explosionSize,
-        height = explosionSize,
+        width = explosionImageSize,
+        height = explosionImageSize,
         numFrames = 7,
     }
     self.explosionImageSheet = graphics.newImageSheet("data/explosion.png", options)
