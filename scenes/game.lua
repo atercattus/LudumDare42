@@ -899,7 +899,21 @@ function scene:updateEnemies(deltaTime)
     end
 end
 
-function scene:makeSomeBlood(obj, isPortal)
+function scene:makeSomeBlood(obj, isEnemy)
+    if isEnemy then
+        if obj.fill ~= nil then
+            obj.fill.effect = "filter.brightness"
+            obj.fill.effect.intensity = 0.9
+
+            timer.performWithDelay(100, function()
+                if obj.fill ~= nil then
+                    obj.fill.effect = nil
+                end
+            end)
+        end
+        return
+    end
+
     local bloodImage = display.newImageRect(self.levelGroup, "data/blood.png", 64, 64)
     bloodImage.x = obj.x
     bloodImage.y = obj.y
@@ -911,24 +925,8 @@ function scene:makeSomeBlood(obj, isPortal)
     bloodImage.yScale = scale
     bloodImage.rotation = randomInt(360)
 
-    if isPortal then
-        bloodImage.fill.effect = "filter.emboss"
-        bloodImage.fill.effect.intensity = 0.2
-    end
-
-    local saveFillEffect
-    if obj.fill ~= nil then
-        saveFillEffect = obj.fill.effect
-        obj.fill.effect = "filter.brightness"
-        obj.fill.effect.intensity = 0.9
-    end
-
     timer.performWithDelay(100, function()
         bloodImage:removeSelf()
-
-        if obj.fill ~= nil then
-            obj.fill.effect = nil
-        end
     end)
 end
 
@@ -940,7 +938,7 @@ function scene:enemyGotDamage(enemyIdx, damage)
         return
     end
 
-    self:makeSomeBlood(enemy)
+    self:makeSomeBlood(enemy, true)
 
     if enemy.enemyType == enemyTypeGuard then
         -- страж портала неу€звим
