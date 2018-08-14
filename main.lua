@@ -4,7 +4,7 @@ math.randomseed(os.time())
 display.setStatusBar(display.HiddenStatusBar)
 
 function myUnhandledErrorListener(event)
-    print("OOOPS", event.errorMessage) -- ToDo: отсылать на сервак?
+    print("OOOPS", event.errorMessage) -- ToDo: РѕС‚СЃС‹Р»Р°С‚СЊ РЅР° СЃРµСЂРІР°Рє?
     return true
 end
 

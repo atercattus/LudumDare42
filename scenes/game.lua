@@ -15,7 +15,7 @@ local vector = utils.vector
 local hasCollidedCircle = utils.hasCollidedCircle
 
 -- ===============
--- КОНСТАНТЫ
+-- РљРћРќРЎРўРђРќРўР«
 -- ===============
 
 local fontName = 'data/ErikaOrmig.ttf'
@@ -45,7 +45,7 @@ local gunTypeMachinegun = 3
 local gunTypeRocketLauncher = 4
 local gunTypeMaxValue = gunTypeRocketLauncher
 
-local gunTypeDropHeart = gunTypeMaxValue + 1 -- костыль для выпадения сердечек
+local gunTypeDropHeart = gunTypeMaxValue + 1 -- РєРѕСЃС‚С‹Р»СЊ РґР»СЏ РІС‹РїР°РґРµРЅРёСЏ СЃРµСЂРґРµС‡РµРє
 
 local rocketDamageRadius = 300
 local explosionImageSize = 64
@@ -53,30 +53,30 @@ local explosionImageSize = 64
 local groundSize = 1024
 
 local gunsInfo = {
-    -- время последнего выстрела из этой пушки (заполняется при инициализации)
+    -- РІСЂРµРјСЏ РїРѕСЃР»РµРґРЅРµРіРѕ РІС‹СЃС‚СЂРµР»Р° РёР· СЌС‚РѕР№ РїСѓС€РєРё (Р·Р°РїРѕР»РЅСЏРµС‚СЃСЏ РїСЂРё РёРЅРёС†РёР°Р»РёР·Р°С†РёРё)
     lastShots = {},
-    -- интервалы между выстрелами каждой пушки
+    -- РёРЅС‚РµСЂРІР°Р»С‹ РјРµР¶РґСѓ РІС‹СЃС‚СЂРµР»Р°РјРё РєР°Р¶РґРѕР№ РїСѓС€РєРё
     shotIntervals = {
         [gunTypePistol] = 200,
         [gunTypeShotgun] = 450,
         [gunTypeMachinegun] = 100,
         [gunTypeRocketLauncher] = 700,
     },
-    -- скорости патронов из пушек
+    -- СЃРєРѕСЂРѕСЃС‚Рё РїР°С‚СЂРѕРЅРѕРІ РёР· РїСѓС€РµРє
     speeds = {
         [gunTypePistol] = 1400,
         [gunTypeShotgun] = 1100,
         [gunTypeMachinegun] = 2500,
         [gunTypeRocketLauncher] = 1000,
     },
-    -- расстояние от рукоятки до конца ствола (чтобы снаряд вылетал откуда надо)
+    -- СЂР°СЃСЃС‚РѕСЏРЅРёРµ РѕС‚ СЂСѓРєРѕСЏС‚РєРё РґРѕ РєРѕРЅС†Р° СЃС‚РІРѕР»Р° (С‡С‚РѕР±С‹ СЃРЅР°СЂСЏРґ РІС‹Р»РµС‚Р°Р» РѕС‚РєСѓРґР° РЅР°РґРѕ)
     barrelLengths = {
         [gunTypePistol] = 40,
         [gunTypeShotgun] = 60,
         [gunTypeMachinegun] = 70,
         [gunTypeRocketLauncher] = 80,
     },
-    -- урон от оружия
+    -- СѓСЂРѕРЅ РѕС‚ РѕСЂСѓР¶РёСЏ
     damages = {
         [gunTypePistol] = 4,
         [gunTypeShotgun] = 3,
@@ -87,22 +87,22 @@ local gunsInfo = {
 
 local portalHP = 20
 
-local enemyGuardMaxDistance = 270 -- максимальное расстояние, на которое Страж отходит от своего портала
-local enemyShooterDistance = 500 -- расстояние, на котором стрелок старается держаться от игрока
+local enemyGuardMaxDistance = 270 -- РјР°РєСЃРёРјР°Р»СЊРЅРѕРµ СЂР°СЃСЃС‚РѕСЏРЅРёРµ, РЅР° РєРѕС‚РѕСЂРѕРµ РЎС‚СЂР°Р¶ РѕС‚С…РѕРґРёС‚ РѕС‚ СЃРІРѕРµРіРѕ РїРѕСЂС‚Р°Р»Р°
+local enemyShooterDistance = 500 -- СЂР°СЃСЃС‚РѕСЏРЅРёРµ, РЅР° РєРѕС‚РѕСЂРѕРј СЃС‚СЂРµР»РѕРє СЃС‚Р°СЂР°РµС‚СЃСЏ РґРµСЂР¶Р°С‚СЊСЃСЏ РѕС‚ РёРіСЂРѕРєР°
 
-local enemyShootMaxDistance = 800 -- максимальное расстояние от врага до игрока, при котором враг будет стрелять (чтобы снаряды не летели через весь уровень)
+local enemyShootMaxDistance = 800 -- РјР°РєСЃРёРјР°Р»СЊРЅРѕРµ СЂР°СЃСЃС‚РѕСЏРЅРёРµ РѕС‚ РІСЂР°РіР° РґРѕ РёРіСЂРѕРєР°, РїСЂРё РєРѕС‚РѕСЂРѕРј РІСЂР°Рі Р±СѓРґРµС‚ СЃС‚СЂРµР»СЏС‚СЊ (С‡С‚РѕР±С‹ СЃРЅР°СЂСЏРґС‹ РЅРµ Р»РµС‚РµР»Рё С‡РµСЂРµР· РІРµСЃСЊ СѓСЂРѕРІРµРЅСЊ)
 
-local enemyShooterShootInterval = 2000 -- как часто стрелок стреляет
-local enemyShooterShootSpeed = 400 -- скорость выстрелов стрелка
+local enemyShooterShootInterval = 2000 -- РєР°Рє С‡Р°СЃС‚Рѕ СЃС‚СЂРµР»РѕРє СЃС‚СЂРµР»СЏРµС‚
+local enemyShooterShootSpeed = 400 -- СЃРєРѕСЂРѕСЃС‚СЊ РІС‹СЃС‚СЂРµР»РѕРІ СЃС‚СЂРµР»РєР°
 
-local enemyGuardShootInterval = 6000 -- как часто страж стреляет
-local enemyGuardShootSpeed = 200 -- скорость выстрелов стража
+local enemyGuardShootInterval = 6000 -- РєР°Рє С‡Р°СЃС‚Рѕ СЃС‚СЂР°Р¶ СЃС‚СЂРµР»СЏРµС‚
+local enemyGuardShootSpeed = 200 -- СЃРєРѕСЂРѕСЃС‚СЊ РІС‹СЃС‚СЂРµР»РѕРІ СЃС‚СЂР°Р¶Р°
 
 local enemyTypePortal = 0
-local enemyTypeSlow = 2 -- медленно идет на игрока
-local enemyTypeShooter = 1 -- старается держаться на расстоянии выстрела. и стреляет
-local enemyTypeGuard = 3 -- защитник портала. неуязвим, пока портал цел
-local enemyTypeFast = 4 -- бежит на игрока и при контакте гибнет
+local enemyTypeSlow = 2 -- РјРµРґР»РµРЅРЅРѕ РёРґРµС‚ РЅР° РёРіСЂРѕРєР°
+local enemyTypeShooter = 1 -- СЃС‚Р°СЂР°РµС‚СЃСЏ РґРµСЂР¶Р°С‚СЊСЃСЏ РЅР° СЂР°СЃСЃС‚РѕСЏРЅРёРё РІС‹СЃС‚СЂРµР»Р°. Рё СЃС‚СЂРµР»СЏРµС‚
+local enemyTypeGuard = 3 -- Р·Р°С‰РёС‚РЅРёРє РїРѕСЂС‚Р°Р»Р°. РЅРµСѓСЏР·РІРёРј, РїРѕРєР° РїРѕСЂС‚Р°Р» С†РµР»
+local enemyTypeFast = 4 -- Р±РµР¶РёС‚ РЅР° РёРіСЂРѕРєР° Рё РїСЂРё РєРѕРЅС‚Р°РєС‚Рµ РіРёР±РЅРµС‚
 local enemyTypeMaxValue = enemyTypeFast
 
 local enemyInfo = {
@@ -122,7 +122,7 @@ local enemyInfo = {
         [enemyTypeSlow] = 2,
         [enemyTypeFast] = 5,
         [enemyTypeShooter] = 4,
-        [enemyTypeGuard] = 99999, -- он програмно неуязвим
+        [enemyTypeGuard] = 99999, -- РѕРЅ РїСЂРѕРіСЂР°РјРЅРѕ РЅРµСѓСЏР·РІРёРј
     },
     scales = {
         [enemyTypeSlow] = 0.9,
@@ -133,7 +133,7 @@ local enemyInfo = {
 }
 
 -- ===============
--- ДИНАМИКА
+-- Р”РРќРђРњРРљРђ
 -- ===============
 
 local scene = composer.newScene()
@@ -209,12 +209,12 @@ function scene:onKey(event)
             else
                 audio.resume()
             end
-        elseif "f12" == event.keyName then -- ToDo: выпилить из релиза
+        elseif "f12" == event.keyName then -- ToDo: РІС‹РїРёР»РёС‚СЊ РёР· СЂРµР»РёР·Р°
             for gunType, _ in ipairs(self.ammoAllowed) do
                 self.ammoAllowed[gunType] = 1000 + self.ammoAllowed[gunType]
                 self:updateAmmoAllowed(gunType)
             end
-        elseif "f11" == event.keyName then -- ToDo: выпилить из релиза
+        elseif "f11" == event.keyName then -- ToDo: РІС‹РїРёР»РёС‚СЊ РёР· СЂРµР»РёР·Р°
             self.playerHP = self.playerHP + 1000
             self:updateHeart()
         end
@@ -328,7 +328,7 @@ function scene:isObjInsideBorder(obj, customSize)
         objSize = customSize
     end
 
-    objSize = objSize / (1 / 0.7) -- для близости к спрайту
+    objSize = objSize / (1 / 0.7) -- РґР»СЏ Р±Р»РёР·РѕСЃС‚Рё Рє СЃРїСЂР°Р№С‚Сѓ
 
     local distanceFromCentre = sqrt(sqr(obj.x) + sqr(obj.y))
 
@@ -408,7 +408,7 @@ function scene:shot()
     if gunType ~= gunTypePistol then
         local cnt = self.ammoAllowed[gunType]
         if cnt == 0 then
-            -- нечем стрелять
+            -- РЅРµС‡РµРј СЃС‚СЂРµР»СЏС‚СЊ
             audio.play(self.soundNoAmmo)
             return
         end
@@ -443,10 +443,10 @@ function scene:shot()
         ammo.x = pos.x
         ammo.y = pos.y
     else
-        -- шотган стреляет дробью
+        -- С€РѕС‚РіР°РЅ СЃС‚СЂРµР»СЏРµС‚ РґСЂРѕР±СЊСЋ
 
-        local sectorAngle = 30 -- сектор разброса дроби
-        local shotsCnt = 6 -- число дробинок
+        local sectorAngle = 30 -- СЃРµРєС‚РѕСЂ СЂР°Р·Р±СЂРѕСЃР° РґСЂРѕР±Рё
+        local shotsCnt = 6 -- С‡РёСЃР»Рѕ РґСЂРѕР±РёРЅРѕРє
         local angleStep = sectorAngle / (shotsCnt - 1)
 
         angle = angle - (sectorAngle / 2)
@@ -480,7 +480,7 @@ function scene:playerDied()
     self.player.playerImage:setSequence("stay")
     self.player.playerImage:play()
 
-    -- оружие "выпадает из рук" и сам герой падает на землю
+    -- РѕСЂСѓР¶РёРµ "РІС‹РїР°РґР°РµС‚ РёР· СЂСѓРє" Рё СЃР°Рј РіРµСЂРѕР№ РїР°РґР°РµС‚ РЅР° Р·РµРјР»СЋ
     self.player.gun.isVisible = false
     transition.to(self.player, { time = 1000, rotation = 90 })
 
@@ -525,7 +525,7 @@ function scene:playerGotDamage(damage)
         return
     end
 
-    -- даю игроку при получении урона неуязвимость на секунду
+    -- РґР°СЋ РёРіСЂРѕРєСѓ РїСЂРё РїРѕР»СѓС‡РµРЅРёРё СѓСЂРѕРЅР° РЅРµСѓСЏР·РІРёРјРѕСЃС‚СЊ РЅР° СЃРµРєСѓРЅРґСѓ
     self.playerInvulnBefore = currentTime + 1000
 
     self.playerHP = math.max(0, self.playerHP - damage)
@@ -610,7 +610,7 @@ function scene:spawnPortal(first)
 
     local radius = self.borderRadius * 0.8
     if first then
-        -- в первый раз создаем портал поближе. может, и всегда так будет :)
+        -- РІ РїРµСЂРІС‹Р№ СЂР°Р· СЃРѕР·РґР°РµРј РїРѕСЂС‚Р°Р» РїРѕР±Р»РёР¶Рµ. РјРѕР¶РµС‚, Рё РІСЃРµРіРґР° С‚Р°Рє Р±СѓРґРµС‚ :)
         radius = radius / 1.15
     end
 
@@ -621,7 +621,7 @@ function scene:spawnPortal(first)
 
     portal.lastTimeEnemySpawn = 0
 
-    -- указатель на портал
+    -- СѓРєР°Р·Р°С‚РµР»СЊ РЅР° РїРѕСЂС‚Р°Р»
     local pointerToPortal = display.newRect(0, 0, 64, 32)
     self.levelGroup:insert(pointerToPortal)
     portal.pointerToPortal = pointerToPortal
@@ -638,7 +638,7 @@ end
 
 function scene:getNewEnemyType(portal)
     local rand = 100 - randomInt(100)
-    -- ToDo: увеличивать вероятность выпадения более сложных противников с развитием
+    -- ToDo: СѓРІРµР»РёС‡РёРІР°С‚СЊ РІРµСЂРѕСЏС‚РЅРѕСЃС‚СЊ РІС‹РїР°РґРµРЅРёСЏ Р±РѕР»РµРµ СЃР»РѕР¶РЅС‹С… РїСЂРѕС‚РёРІРЅРёРєРѕРІ СЃ СЂР°Р·РІРёС‚РёРµРј
 
     local level = self.portalsCreatedForAllTime
 
@@ -665,7 +665,7 @@ function scene:spawnEnemy(portal)
         enemy.portal = portal
         portal.guard = enemy
     elseif enemyType == enemyTypeShooter then
-        -- чтобы они не кучковались (если их будет несколько), расставляю их с небольшим рандомом
+        -- С‡С‚РѕР±С‹ РѕРЅРё РЅРµ РєСѓС‡РєРѕРІР°Р»РёСЃСЊ (РµСЃР»Рё РёС… Р±СѓРґРµС‚ РЅРµСЃРєРѕР»СЊРєРѕ), СЂР°СЃСЃС‚Р°РІР»СЏСЋ РёС… СЃ РЅРµР±РѕР»СЊС€РёРј СЂР°РЅРґРѕРјРѕРј
         enemy.distanceMult = 0.7
     end
 
@@ -680,13 +680,13 @@ function scene:spawnEnemy(portal)
     enemy.xScale = scale
     enemy.yScale = scale
 
-    -- ToDo: нужно спавнить в сторону центра
+    -- ToDo: РЅСѓР¶РЅРѕ СЃРїР°РІРЅРёС‚СЊ РІ СЃС‚РѕСЂРѕРЅСѓ С†РµРЅС‚СЂР°
     enemy.x = portal.x + randomInt(-1, 1) * enemyWidth
     enemy.y = portal.y + randomInt(-1, 1) * enemyHeight
 
     self.enemies[#self.enemies + 1] = enemy
 
-    -- плавное появление
+    -- РїР»Р°РІРЅРѕРµ РїРѕСЏРІР»РµРЅРёРµ
     enemy.alpha = 0
     transition.to(enemy, { time = 400, alpha = 1 })
 
@@ -706,7 +706,7 @@ function scene:updatePortal(portal, deltaTime)
         self:spawnEnemy(portal)
     end
 
-    -- указание в сторону портала
+    -- СѓРєР°Р·Р°РЅРёРµ РІ СЃС‚РѕСЂРѕРЅСѓ РїРѕСЂС‚Р°Р»Р°
     local player = self.player
     local angle = 90 - vectorToAngle(vector(portal.x, portal.y, player.x, player.y))
     local pointer = portal.pointerToPortal
@@ -756,7 +756,7 @@ function scene:enemyShotToPlayer(enemy)
     local vec = vector(enemy.x, enemy.y, self.player.x, self.player.y)
     ammo.rotation = 90 - vectorToAngle(vec)
 
-    local pos = self:calcMoveForwardPosition(ammo, 60) -- 60 для 128px выходит норм
+    local pos = self:calcMoveForwardPosition(ammo, 60) -- 60 РґР»СЏ 128px РІС‹С…РѕРґРёС‚ РЅРѕСЂРј
     ammo.x = pos.x
     ammo.y = pos.y
 
@@ -770,7 +770,7 @@ function scene:updateEnemy(enemy, deltaTime)
     local enemySpeed = enemyInfo.speeds[enemy.enemyType]
 
     if enemy.enemyType == enemyTypeGuard then
-        -- Стражи тоже иногда стреляют
+        -- РЎС‚СЂР°Р¶Рё С‚РѕР¶Рµ РёРЅРѕРіРґР° СЃС‚СЂРµР»СЏСЋС‚
         local currentTime = system.getTimer()
         local lastShotTime = enemy.lastShotTime or 0
         if lastShotTime + enemyGuardShootInterval < currentTime then
@@ -778,13 +778,13 @@ function scene:updateEnemy(enemy, deltaTime)
             self:enemyShotToPlayer(enemy)
         end
 
-        -- Стражи не отходят далеко от своего портала
+        -- РЎС‚СЂР°Р¶Рё РЅРµ РѕС‚С…РѕРґСЏС‚ РґР°Р»РµРєРѕ РѕС‚ СЃРІРѕРµРіРѕ РїРѕСЂС‚Р°Р»Р°
         local distance = distanceBetween(enemy, enemy.portal)
         if distance >= enemyGuardMaxDistance then
             return
         end
     elseif enemy.enemyType == enemyTypeShooter then
-        -- Стрелки стреляют. Вот так неожиданно
+        -- РЎС‚СЂРµР»РєРё СЃС‚СЂРµР»СЏСЋС‚. Р’РѕС‚ С‚Р°Рє РЅРµРѕР¶РёРґР°РЅРЅРѕ
         local currentTime = system.getTimer()
         local lastShotTime = enemy.lastShotTime or 0
         if lastShotTime + enemyShooterShootInterval < currentTime then
@@ -792,19 +792,19 @@ function scene:updateEnemy(enemy, deltaTime)
             self:enemyShotToPlayer(enemy)
         end
 
-        -- Стрелки стараются держаться на расстоянии
+        -- РЎС‚СЂРµР»РєРё СЃС‚Р°СЂР°СЋС‚СЃСЏ РґРµСЂР¶Р°С‚СЊСЃСЏ РЅР° СЂР°СЃСЃС‚РѕСЏРЅРёРё
 
         local toPlayerDist = distanceBetween(enemy, self.player)
 
         if toPlayerDist < (enemyShooterDistance * enemy.distanceMult) then
-            -- Если до игрока слишком близко, то смотрим,
-            --   если мы отойдем подальше, то не окажемся ли у барьера
+            -- Р•СЃР»Рё РґРѕ РёРіСЂРѕРєР° СЃР»РёС€РєРѕРј Р±Р»РёР·РєРѕ, С‚Рѕ СЃРјРѕС‚СЂРёРј,
+            --   РµСЃР»Рё РјС‹ РѕС‚РѕР№РґРµРј РїРѕРґР°Р»СЊС€Рµ, С‚Рѕ РЅРµ РѕРєР°Р¶РµРјСЃСЏ Р»Рё Сѓ Р±Р°СЂСЊРµСЂР°
             local deltaDist = enemySpeed * deltaTime
             local newPos = self:calcMoveTowardsPosition(enemy, { x = self.player.x, y = self.player.y }, -deltaDist)
 
             local newPosRadius = vectorLen(newPos)
             if (newPosRadius + enemyWidth) < self.borderRadius then
-                -- отходит от игрока
+                -- РѕС‚С…РѕРґРёС‚ РѕС‚ РёРіСЂРѕРєР°
                 self:moveTowards(enemy, { x = self.player.x, y = self.player.y }, -deltaDist)
                 return
             end
@@ -860,17 +860,17 @@ function scene:dropAmmo(enemyType, enemyObj)
             ammoQuantity = randomInt(2, 3)
         end
     else
-        -- не реализовано
+        -- РЅРµ СЂРµР°Р»РёР·РѕРІР°РЅРѕ
         return
     end
 
     if not gunType then
         if randomInt(100) >= 97 then
-            -- иногда можно и сердечко выкинуть
+            -- РёРЅРѕРіРґР° РјРѕР¶РЅРѕ Рё СЃРµСЂРґРµС‡РєРѕ РІС‹РєРёРЅСѓС‚СЊ
             gunType = gunTypeDropHeart
             ammoQuantity = 1
         else
-            -- дроп не в этот раз
+            -- РґСЂРѕРї РЅРµ РІ СЌС‚РѕС‚ СЂР°Р·
             return
         end
     end
@@ -917,14 +917,14 @@ function scene:updateEnemies(deltaTime)
     local to_delete = {}
 
     for i, enemy in ipairs(self.enemies) do
-        -- поворот в сторону игрока
+        -- РїРѕРІРѕСЂРѕС‚ РІ СЃС‚РѕСЂРѕРЅСѓ РёРіСЂРѕРєР°
         local playerInTheLeft = self.player.x < enemy.x
         local scale = math.abs(enemy.xScale)
         enemy.xScale = playerInTheLeft and -scale or scale
 
         if not self:isObjInsideBorder(enemy) then
             if enemy.enemyType == enemyTypeGuard then
-                -- Страж не гибнет от барьера, а как и портал движется с ним
+                -- РЎС‚СЂР°Р¶ РЅРµ РіРёР±РЅРµС‚ РѕС‚ Р±Р°СЂСЊРµСЂР°, Р° РєР°Рє Рё РїРѕСЂС‚Р°Р» РґРІРёР¶РµС‚СЃСЏ СЃ РЅРёРј
                 self:moveTo(enemy, { x = 0, y = 0 }, borderRadiusSpeed, deltaTime)
             else
                 to_delete[#to_delete + 1] = i
@@ -975,12 +975,12 @@ function scene:enemyGotDamage(enemyIdx, ammo)
     local enemy = self.enemies[enemyIdx]
 
     if enemy == nil then
-        -- похоже что этого врага уже и так разорвало ракетницей
+        -- РїРѕС…РѕР¶Рµ С‡С‚Рѕ СЌС‚РѕРіРѕ РІСЂР°РіР° СѓР¶Рµ Рё С‚Р°Рє СЂР°Р·РѕСЂРІР°Р»Рѕ СЂР°РєРµС‚РЅРёС†РµР№
         return
     end
 
     if enemy.enemyType == enemyTypeGuard then
-        -- страж портала неуязвим
+        -- СЃС‚СЂР°Р¶ РїРѕСЂС‚Р°Р»Р° РЅРµСѓСЏР·РІРёРј
         self:makeSomeBlood(enemy, true)
         return
     end
@@ -996,7 +996,7 @@ end
 
 function scene:getNewPortslsCount()
     local cnt = self.portalsCreatedForAllTime
-    if cnt <= 4 then -- первые два предполагаются учетными (с текстом на экране)
+    if cnt <= 4 then -- РїРµСЂРІС‹Рµ РґРІР° РїСЂРµРґРїРѕР»Р°РіР°СЋС‚СЃСЏ СѓС‡РµС‚РЅС‹РјРё (СЃ С‚РµРєСЃС‚РѕРј РЅР° СЌРєСЂР°РЅРµ)
         return 1
     elseif cnt <= 7 then
         return 2
@@ -1013,7 +1013,7 @@ function scene:portalDestroed(portalIdx)
     local portal = self.portals[portalIdx]
 
     if portal.guard then
-        -- если у портала был Страж, то он тоже гибнет
+        -- РµСЃР»Рё Сѓ РїРѕСЂС‚Р°Р»Р° Р±С‹Р» РЎС‚СЂР°Р¶, С‚Рѕ РѕРЅ С‚РѕР¶Рµ РіРёР±РЅРµС‚
         for enemyIdx, enemy in ipairs(self.enemies) do
             if enemy == portal.guard then
                 enemy.portal = nil
@@ -1024,7 +1024,7 @@ function scene:portalDestroed(portalIdx)
         end
     end
 
-    -- маркер, указывающий на портал, тоже больше не нужен
+    -- РјР°СЂРєРµСЂ, СѓРєР°Р·С‹РІР°СЋС‰РёР№ РЅР° РїРѕСЂС‚Р°Р», С‚РѕР¶Рµ Р±РѕР»СЊС€Рµ РЅРµ РЅСѓР¶РµРЅ
     portal.pointerToPortal:removeSelf()
     portal.pointerToPortal = nil
 
@@ -1033,7 +1033,7 @@ function scene:portalDestroed(portalIdx)
     portal:removeSelf()
     table.remove(self.portals, portalIdx)
 
-    self.totalScore = self.totalScore + 100 -- да.... хардкод
+    self.totalScore = self.totalScore + 100 -- РґР°.... С…Р°СЂРґРєРѕРґ
 
     self.playerSpeed = math.min(700, self.playerSpeed + 20)
 
@@ -1063,7 +1063,7 @@ function scene:portalGotDamage(portalIdx, ammo)
     local portal = self.portals[portalIdx]
 
     if portal == nil then
-        -- похоже что этот портал уже и так разорвало ракетницей
+        -- РїРѕС…РѕР¶Рµ С‡С‚Рѕ СЌС‚РѕС‚ РїРѕСЂС‚Р°Р» СѓР¶Рµ Рё С‚Р°Рє СЂР°Р·РѕСЂРІР°Р»Рѕ СЂР°РєРµС‚РЅРёС†РµР№
         return
     end
 
@@ -1121,7 +1121,7 @@ function scene:updatePlayer(deltaTime)
         dY = dir * self.playerSpeed * deltaTime
     end
 
-    -- смена анимаций
+    -- СЃРјРµРЅР° Р°РЅРёРјР°С†РёР№
     if isMoving and self.player.playerImage.sequence ~= "run" then
         self.player.playerImage:setSequence("run")
         self.player.playerImage:play()
@@ -1130,19 +1130,19 @@ function scene:updatePlayer(deltaTime)
         self.player.playerImage:play()
     end
 
-    -- перемещение игрока
+    -- РїРµСЂРµРјРµС‰РµРЅРёРµ РёРіСЂРѕРєР°
     self.player.x = self.player.x + dX
     self.player.y = self.player.y + dY
 
-    -- "камера" следует за игроком
+    -- "РєР°РјРµСЂР°" СЃР»РµРґСѓРµС‚ Р·Р° РёРіСЂРѕРєРѕРј
     self.levelGroup.x = self.levelGroup.x - dX
     self.levelGroup.y = self.levelGroup.y - dY
 
-    -- направление взгляда
+    -- РЅР°РїСЂР°РІР»РµРЅРёРµ РІР·РіР»СЏРґР°
     local dir = (self.mousePos.x > 0) and 1 or -1
     self.player.xScale = dir
 
-    -- направление пушки
+    -- РЅР°РїСЂР°РІР»РµРЅРёРµ РїСѓС€РєРё
     local vec = { x = self.mousePos.x, y = -self.mousePos.y }
     if vec.y == 0 then
         return
@@ -1154,7 +1154,7 @@ function scene:updatePlayer(deltaTime)
     end
     self.player.gun.rotation = angle - 90
 
-    -- стрельба
+    -- СЃС‚СЂРµР»СЊР±Р°
     if self.pressedKeys.mouseLeft then
         local currentTime = system.getTimer()
         local delta = currentTime - gunsInfo.lastShots[self.player.gun.gunType]
@@ -1251,13 +1251,13 @@ end
 
 function scene:ammoCollideAnim(ammo, enemyOrPortal)
     if ammo.gunType ~= gunTypeRocketLauncher then
-        -- пока без особенностей для обычных пушек
+        -- РїРѕРєР° Р±РµР· РѕСЃРѕР±РµРЅРЅРѕСЃС‚РµР№ РґР»СЏ РѕР±С‹С‡РЅС‹С… РїСѓС€РµРє
         return false
     end
 
     self:explosion(enemyOrPortal)
 
-    -- нужно нанести урон всем противникам в области
+    -- РЅСѓР¶РЅРѕ РЅР°РЅРµСЃС‚Рё СѓСЂРѕРЅ РІСЃРµРј РїСЂРѕС‚РёРІРЅРёРєР°Рј РІ РѕР±Р»Р°СЃС‚Рё
     local to_delete = {}
     for enemyIdx, enemy in ipairs(self.enemies) do
         if distanceBetween(ammo, enemy) < rocketDamageRadius then
@@ -1285,14 +1285,14 @@ function scene:ammoCollideAnim(ammo, enemyOrPortal)
     return true
 end
 
--- updateAmmo вернет true, если пулю нужно удалять
+-- updateAmmo РІРµСЂРЅРµС‚ true, РµСЃР»Рё РїСѓР»СЋ РЅСѓР¶РЅРѕ СѓРґР°Р»СЏС‚СЊ
 function scene:updateAmmo(ammo, deltaTime)
     local collided = false
 
     local got_damage = {}
     for enemyIdx, enemy in ipairs(self.enemies) do
         if hasCollidedCircle(ammo, enemy) then
-            if not self:ammoCollideAnim(ammo, enemy) then -- может удалять то, что было задано в got_damage
+            if not self:ammoCollideAnim(ammo, enemy) then -- РјРѕР¶РµС‚ СѓРґР°Р»СЏС‚СЊ С‚Рѕ, С‡С‚Рѕ Р±С‹Р»Рѕ Р·Р°РґР°РЅРѕ РІ got_damage
                 got_damage[#got_damage + 1] = enemyIdx
             end
             collided = true
@@ -1306,7 +1306,7 @@ function scene:updateAmmo(ammo, deltaTime)
     local got_damage = {}
     for i, portal in ipairs(self.portals) do
         if hasCollidedCircle(ammo, portal) then
-            if not self:ammoCollideAnim(ammo, portal) then -- может удалять то, что было задано в got_damage
+            if not self:ammoCollideAnim(ammo, portal) then -- РјРѕР¶РµС‚ СѓРґР°Р»СЏС‚СЊ С‚Рѕ, С‡С‚Рѕ Р±С‹Р»Рѕ Р·Р°РґР°РЅРѕ РІ got_damage
                 got_damage[#got_damage + 1] = i
             end
             collided = true
@@ -1327,13 +1327,13 @@ function scene:updateAmmo(ammo, deltaTime)
 end
 
 function scene:updateAmmos(deltaTime)
-    -- Пули игрока
+    -- РџСѓР»Рё РёРіСЂРѕРєР°
     local to_delete = {}
     for i, ammo in ipairs(self.ammoInFlight) do
         if not self:isObjInsideBorder(ammo) then
             to_delete[#to_delete + 1] = i
         elseif self:updateAmmo(ammo, deltaTime) then
-            -- Пуля с чем-то столкнулась, тоже удаляем
+            -- РџСѓР»СЏ СЃ С‡РµРј-С‚Рѕ СЃС‚РѕР»РєРЅСѓР»Р°СЃСЊ, С‚РѕР¶Рµ СѓРґР°Р»СЏРµРј
             to_delete[#to_delete + 1] = i
         end
     end
@@ -1344,7 +1344,7 @@ function scene:updateAmmos(deltaTime)
         self:ammoPut(ammo)
     end
 
-    -- Пули врагов
+    -- РџСѓР»Рё РІСЂР°РіРѕРІ
     local to_delete = {}
     for i, ammo in ipairs(self.enemyAmmoInFlight) do
         if not self:isObjInsideBorder(ammo) then
@@ -1413,7 +1413,7 @@ function scene:setupGunsAndAmmo()
     local options = {
         width = ammoBlockWidth,
         height = ammoBlockHeight,
-        numFrames = self.gunsCount + 1, -- +1 для сердечка
+        numFrames = self.gunsCount + 1, -- +1 РґР»СЏ СЃРµСЂРґРµС‡РєР°
     }
     self.ammoBlocksImageSheet = graphics.newImageSheet("data/ammo_blocks.png", options)
 
@@ -1476,7 +1476,7 @@ function scene:setupHeart()
     self.heartIconText.x = self.heartIcon.x + self.heartIcon.contentWidth + 10
     self.heartIconText.y = self.heartIcon.y * 1.03
 
-    -- анимация биения
+    -- Р°РЅРёРјР°С†РёСЏ Р±РёРµРЅРёСЏ
     local scaleFunc
     scaleFunc = function()
         transition.scaleTo(self.heartIcon, {
@@ -1611,7 +1611,7 @@ function scene:create(event)
     self.soundBoom = audio.loadSound("data/boom.wav")
     self.soundHit = audio.loadSound("data/hit.wav")
     self.soundHeart = audio.loadSound("data/heart.wav")
-    self.soundAmmo = audio.loadSound("data/heart.wav") -- пока такой звук
+    self.soundAmmo = audio.loadSound("data/heart.wav") -- РїРѕРєР° С‚Р°РєРѕР№ Р·РІСѓРє
     self.soundExtension = audio.loadSound("data/extension.wav")
 
     self.soundGuns = {}
