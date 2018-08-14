@@ -806,6 +806,9 @@ function scene:updateEnemy(enemy, deltaTime)
         -- Стражи не отходят далеко от своего портала
         local distance = distanceBetween(enemy, enemy.portal)
         if distance >= enemyGuardMaxDistance then
+            -- Страж старается встать на линию между игроком и порталом
+            local pos = self:calcMoveTowardsPosition(enemy.portal, self.player, enemyGuardMaxDistance)
+            self:moveTo(enemy, { x = pos.x, y = pos.y }, enemySpeed, deltaTime)
             return
         end
     elseif enemy.enemyType == enemyTypeShooter then
