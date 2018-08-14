@@ -154,10 +154,10 @@ function scene:updateActiveGunInUI(currentGunType)
     for gunType, text in ipairs(self.ammoBlocksTexts) do
         if currentGunType == gunType then
             text:setFillColor(1, 1, 1)
-            text.size = 48
+            text.size = 54
         else
             text:setFillColor(1, 1, 0.4)
-            text.size = 42
+            text.size = 54
         end
     end
 end
@@ -276,6 +276,8 @@ end
 function scene:setupAim()
     self.aim = display.newImageRect(self.view, "data/aim.png", 32, 32)
     self.aim.name = "aim"
+    self.aim.xScale = 2
+    self.aim.yScale = 2
     self.aim.anchorX = 0.5
     self.aim.anchorY = 0.5
 end
@@ -295,7 +297,7 @@ function scene:setupScores()
         text = "",
         width = self.W,
         font = fontName,
-        fontSize = 48,
+        fontSize = 54,
         align = 'center',
     })
     self.scoresText:setFillColor(1, 1, 0.4)
@@ -309,7 +311,7 @@ function scene:setupScores()
         text = "",
         width = self.W,
         font = fontName,
-        fontSize = 42,
+        fontSize = 54,
         align = 'right',
     })
     self.raduisText:setFillColor(1, 1, 0.4)
@@ -1459,7 +1461,7 @@ function scene:setupGunsAndAmmo()
             text = (gunType == gunTypePistol) and "--" or "0",
             width = self.W,
             font = fontName,
-            fontSize = 42,
+            fontSize = 54,
             align = 'left',
         })
         text:setFillColor(1, 1, 0.4)
@@ -1490,7 +1492,7 @@ function scene:setupHeart()
         text = "0",
         width = self.W,
         font = fontName,
-        fontSize = 42,
+        fontSize = 54,
         align = 'left',
     })
     self.heartIconText:setFillColor(1, 0.9, 0.9)
