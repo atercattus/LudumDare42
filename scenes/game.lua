@@ -847,7 +847,7 @@ function scene:dropAmmo(enemyType, enemyObj)
     local ammoQuantity
     if enemyType == enemyTypePortal then
         local rnd = 100 - randomInt(100)
-        if rnd < 70 then
+        if rnd < 50 then
             gunType = gunTypeRocketLauncher
             ammoQuantity = randomInt(1, 3)
         elseif rnd < 20 then
@@ -859,7 +859,7 @@ function scene:dropAmmo(enemyType, enemyObj)
         end
     elseif enemyType == enemyTypeShooter then
         local rnd = 100 - randomInt(100)
-        if rnd < 5 then
+        if rnd <= 1 then
             gunType = gunTypeRocketLauncher
             ammoQuantity = 1
         elseif rnd < 50 then
