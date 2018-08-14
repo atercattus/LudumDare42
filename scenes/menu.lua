@@ -12,7 +12,7 @@ function scene:create(event)
     local W, H = display.contentWidth, display.contentHeight
     local sceneGroup = self.view
 
-    local titleText = display.newText({ text = gameName, width = W, font = fontName, fontSize = 90, align = 'center' })
+    local titleText = display.newText({ text = gameName, width = W, font = fontName, fontSize = appScale * 90, align = 'center' })
     sceneGroup:insert(titleText)
     titleText:setFillColor(1, 1, 0.4)
     titleText.anchorX = 0.5
@@ -25,7 +25,7 @@ Destroy all portals!
 
 Do not touch the Barrier]]
 
-    local howtoText = display.newText({ text = howto, width = W, font = fontName, fontSize = 54, align = 'center' })
+    local howtoText = display.newText({ text = howto, width = W, font = fontName, fontSize = appScale * 54, align = 'center' })
     sceneGroup:insert(howtoText)
     howtoText:setFillColor(0.8, 0.8, 0.8)
     howtoText.anchorX = 0
@@ -39,6 +39,8 @@ Do not touch the Barrier]]
     controls.y = howtoText.contentHeight + howtoText.y
     controls.anchorX = 0.5
     controls.anchorY = 0
+    controls.xScale = appScale
+    controls.yScale = appScale
 
     scene.mouseReleased = false
     scene.mouseClicked = false
@@ -63,10 +65,10 @@ Do not touch the Barrier]]
     startGameScaleFunc = function()
         transition.scaleTo(controls, {
             time = 2500,
-            xScale = 1.07,
-            yScale = 1.07,
+            xScale = appScale * 1.07,
+            yScale = appScale * 1.07,
             onComplete = function()
-                transition.scaleTo(controls, { time = 2500, xScale = 1, yScale = 1, onComplete = startGameScaleFunc })
+                transition.scaleTo(controls, { time = 2500, xScale = appScale * 1, yScale = appScale * 1, onComplete = startGameScaleFunc })
             end
         })
     end

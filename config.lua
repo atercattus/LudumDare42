@@ -1,4 +1,4 @@
-local appScale = 1.5
+appScale = 1.5
 
 application = {
     content = {
