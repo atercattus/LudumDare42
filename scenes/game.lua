@@ -54,6 +54,8 @@ local groundSize = 1024
 
 local minimalDistanceFromPlayerToNewPortal = 450
 
+local playerMaximumHealth = 10
+
 -- длительность появления из портала
 local enemySpawnAnimDelay = 400
 
@@ -223,8 +225,8 @@ function scene:onKey(event)
                 self:updateAmmoAllowed(gunType)
             end
         elseif "f11" == event.keyName then -- ToDo: выпилить из релиза
-            self.playerHP = self.playerHP + 1000
-            self:updateHeart()
+            self.playerHP = playerMaximumHealth
+            self:updateHealthBar()
         end
     end
 
@@ -406,10 +408,6 @@ function scene:updateAmmoAllowed(gunType)
     self.ammoBlocksTexts[gunType].text = tostring(self.ammoAllowed[gunType])
 end
 
-function scene:updateHeart()
-    self.heartIconText.text = tostring(self.playerHP)
-end
-
 function scene:shot()
     local gunType = self.player.gun.gunType
 
@@ -540,7 +538,7 @@ function scene:playerGotDamage(damage)
 
     self.playerHP = math.max(0, self.playerHP - damage)
     audio.play(self.soundHit)
-    self:updateHeart()
+    self:updateHealthBar()
     if self.playerHP == 0 then
         self:playerDied()
     else
@@ -1133,6 +1131,11 @@ function scene:playerCheckCollisions()
     end
 end
 
+function scene:updateHealthBar()
+    local newWidth = self.player.playerImage.width * (math.min(self.playerHP, playerMaximumHealth) / playerMaximumHealth)
+    transition.to(self.healthBar, { time = 200, width = newWidth, transition = easing.outBack })
+end
+
 function scene:updatePlayer(deltaTime)
     local dX, dY = 0, 0
 
@@ -1161,6 +1164,10 @@ function scene:updatePlayer(deltaTime)
     -- перемещение игрока
     self.player.x = self.player.x + dX
     self.player.y = self.player.y + dY
+
+    -- полоска здоровья
+    self.healthBar.x = self.player.x
+    self.healthBar.y = self.player.y - 80
 
     -- "камера" следует за игроком
     self.levelGroup.x = self.levelGroup.x - dX
@@ -1400,8 +1407,8 @@ function scene:updateAmmoDrops(deltaTime)
         elseif hasCollidedCircle(self.player, drop) then
             if drop.gunType == gunTypeDropHeart then
                 audio.play(self.soundHeart)
-                self.playerHP = self.playerHP + drop.quantity
-                self:updateHeart()
+                self.playerHP = math.max(playerMaximumHealth, self.playerHP + drop.quantity)
+                self:updateHealthBar()
             else
                 audio.play(self.soundAmmo)
                 self.ammoAllowed[drop.gunType] = self.ammoAllowed[drop.gunType] + drop.quantity
@@ -1477,48 +1484,6 @@ function scene:setupGunsAndAmmo()
 
         self:updateAmmoAllowed(gunType)
     end
-end
-
-function scene:setupHeart()
-    self.heartIcon = display.newRect(0, 0,
-        ammoBlockWidth * ammoIconScale,
-        ammoBlockHeight * ammoIconScale)
-    self.view:insert(self.heartIcon)
-    self.heartIcon.fill = { type = "image", sheet = self.ammoBlocksImageSheet, frame = self.gunsCount + 1 }
-    self.heartIcon.x = 0
-    self.heartIcon.y = 10 + self.gunsCount * ammoBlockHeight * ammoIconScale
-    self.heartIcon.anchorX = 0
-    self.heartIcon.anchorY = 0
-
-    self.heartIconText = display.newText({
-        parent = self.view,
-        text = "0",
-        width = self.W,
-        font = fontName,
-        fontSize = 54,
-        align = 'left',
-    })
-    self.heartIconText:setFillColor(1, 0.9, 0.9)
-    self.heartIconText.anchorX = 0
-    self.heartIconText.anchorY = 0
-    self.heartIconText.x = self.heartIcon.x + self.heartIcon.contentWidth + 10
-    self.heartIconText.y = self.heartIcon.y * 1.03
-
-    -- анимация биения
-    local scaleFunc
-    scaleFunc = function()
-        transition.scaleTo(self.heartIcon, {
-            time = 800,
-            xScale = 1.1,
-            yScale = 1.1,
-            onComplete = function()
-                transition.scaleTo(self.heartIcon, { time = 800, xScale = 1, yScale = 1, onComplete = scaleFunc })
-            end
-        })
-    end
-    scaleFunc()
-
-    self:updateHeart()
 end
 
 function scene:setupEnemies()
@@ -1604,6 +1569,18 @@ function scene:setupDebugText()
     self.debugText.y = self.H
 end
 
+function scene:setupHealthBar()
+    self.healthBar = display.newRect(0, 0, 90, 18)
+    self.levelGroup:insert(self.healthBar)
+
+    self.healthBar.anchorX = 0.5
+    self.healthBar.anchorY = 1
+
+    self.healthBar:setFillColor(1, 0, 0)
+end
+
+-- ===========================================================================================
+
 function scene:onEnterFrame(event)
     if self.lastEnterFrameTime == 0 then
         self.lastEnterFrameTime = system.getTimer()
@@ -1630,8 +1607,6 @@ function scene:onEnterFrame(event)
 
     self:updateScores()
 end
-
--- ===========================================================================================
 
 function scene:create(event)
     self.soundNoAmmo = audio.loadSound("data/no_ammo.wav")
@@ -1678,6 +1653,8 @@ local function onMouseEvent(event)
 end
 
 function scene:reset()
+    audio.stop()
+
     for i = self.view.numChildren, 1, -1 do
         self.view[i]:removeSelf()
     end
@@ -1720,7 +1697,7 @@ function scene:reset()
     self.portalsCreatedForAllTime = 0
     self.totalScore = 0
 
-    self.playerHP = 10
+    self.playerHP = playerMaximumHealth
     self.playerInvulnBefore = 0
 
     self.aim = nil
@@ -1746,9 +1723,6 @@ function scene:reset()
     self.ammoBlocksIcons = {}
     self.ammoBlocksTexts = {}
 
-    self.heartIcon = nil
-    self.heartIconText = nil
-
     self.ammoAllowed = {}
 
     self.lastEnterFrameTime = 0
@@ -1757,6 +1731,8 @@ function scene:reset()
 
     self.pauseText = nil
     self.debugText = nil
+
+    self.healthBar = nil
 end
 
 scene:addEventListener("show", function(event)
@@ -1764,7 +1740,6 @@ scene:addEventListener("show", function(event)
         scene:reset()
 
         scene.soundMelody = audio.loadSound("data/melody.wav")
-
         scene.melodyChannel = audio.play(scene.soundMelody, { loops = -1 })
         audio.setVolume(0.75, { channel = scene.melodyChannel })
 
@@ -1782,8 +1757,6 @@ scene:addEventListener("show", function(event)
 
         scene:setupGunsAndAmmo()
 
-        scene:setupHeart()
-
         scene:setupEnemies()
         scene:setupEnemyAmmo()
 
@@ -1800,6 +1773,8 @@ scene:addEventListener("show", function(event)
 
         scene:setupPauseText()
         scene:setupDebugText()
+
+        scene:setupHealthBar()
 
         Runtime:addEventListener("enterFrame", onEnterFrame)
         Runtime:addEventListener("key", onKey)
