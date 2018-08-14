@@ -1,7 +1,9 @@
+local appScale = 1.5
+
 application = {
     content = {
-        width = 900,
-        height = 1440,
+        width = appScale * 900,
+        height = appScale * 1440,
         scale = 'letterbox',
         fps = 60,
     }
