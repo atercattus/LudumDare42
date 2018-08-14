@@ -201,6 +201,14 @@ function scene:onKey(event)
     if event.phase == 'down' then
         if "1" <= event.keyName and event.keyName <= "4" then
             self:switchGun(tonumber(event.keyName))
+        elseif "mediaPause" == event.keyName then
+            self.gameInPause = not self.gameInPause
+            self.pauseText.isVisible = self.gameInPause
+            if self.gameInPause then
+                audio.pause()
+            else
+                audio.resume()
+            end
         elseif "f12" == event.keyName then -- ToDo: выпилить из релиза
             for gunType, _ in ipairs(self.ammoAllowed) do
                 self.ammoAllowed[gunType] = 1000 + self.ammoAllowed[gunType]
@@ -306,6 +314,10 @@ end
 function scene:updateScores()
     self.scoresText.text = "Score: " .. tostring(self.totalScore)
     self.raduisText.text = "Radius: " .. round(self.borderRadius)
+end
+
+function scene:updateDebug()
+    self.debugText.text = "FPS: " .. display.fps
 end
 
 function scene:isObjInsideBorder(obj, customSize)
@@ -1526,6 +1538,44 @@ function scene:setupFastEnemyExplosion()
     self.fastEnemyExplosionImageSheet = graphics.newImageSheet("data/fast_enemy_explosion.png", options)
 end
 
+function scene:setupPauseText()
+    self.pauseText = display.newEmbossedText({
+        parent = self.view,
+        text = "PAUSE",
+        font = fontName,
+        fontSize = 220,
+        align = 'center',
+    })
+    self.pauseText:setFillColor(1, 0.2, 0.3)
+    self.pauseText.anchorX = 0.5
+    self.pauseText.anchorY = 0.5
+    self.pauseText.x = self.W / 2
+    self.pauseText.y = self.H / 2
+
+    local color = {
+        highlight = { r = 1, g = 1, b = 1 },
+        shadow = { r = 0.1, g = 0.1, b = 0.1 }
+    }
+    self.pauseText:setEmbossColor(color)
+
+    self.pauseText.isVisible = false
+end
+
+function scene:setupDebugText()
+    self.debugText = display.newText({
+        parent = self.view,
+        text = "PAUSE",
+        font = fontName,
+        fontSize = 30,
+        align = 'right',
+    })
+    self.debugText:setFillColor(0.8, 0.8, 0.8)
+    self.debugText.anchorX = 1
+    self.debugText.anchorY = 1
+    self.debugText.x = self.W
+    self.debugText.y = self.H
+end
+
 function scene:onEnterFrame(event)
     if self.lastEnterFrameTime == 0 then
         self.lastEnterFrameTime = system.getTimer()
@@ -1536,6 +1586,8 @@ function scene:onEnterFrame(event)
     if deltaTime <= 0 then
         return
     end
+
+    self:updateDebug()
 
     if self.gameInPause then
         return
@@ -1674,6 +1726,9 @@ function scene:reset()
     self.lastEnterFrameTime = 0
 
     self.shotImage = nil
+
+    self.pauseText = nil
+    self.debugText = nil
 end
 
 scene:addEventListener("show", function(event)
@@ -1714,6 +1769,9 @@ scene:addEventListener("show", function(event)
         scene:setupShotFire()
 
         scene:spawnPortal(true)
+
+        scene:setupPauseText()
+        scene:setupDebugText()
 
         Runtime:addEventListener("enterFrame", onEnterFrame)
         Runtime:addEventListener("key", onKey)
