@@ -51,6 +51,8 @@ Do not touch the Barrier]]
             if not scene.mouseReleased then
                 scene.mouseReleased = true
             elseif scene.mouseClicked then
+                scene.mouseReleased = false
+                scene.mouseClicked = false
                 composer.gotoScene('scenes.game')
             end
         end
