@@ -54,6 +54,12 @@ local groundSize = 1024
 
 local minimalDistanceFromPlayerToNewPortal = 450
 
+-- длительность появления из портала
+local enemySpawnAnimDelay = 400
+
+-- запрет на это время стрелять сразу после появления из портала
+local enemyShotFreezeAfterSpawn = 1000
+
 local gunsInfo = {
     -- время последнего выстрела из этой пушки (заполняется при инициализации)
     lastShots = {},
@@ -668,6 +674,7 @@ function scene:spawnEnemy(portal)
     self.levelGroup:insert(enemy)
 
     enemy.HP = enemyInfo.HPs[enemyType]
+    enemy.createdAt = system.getTimer()
 
     if enemyType == enemyTypeGuard then
         enemy.portal = portal
@@ -688,15 +695,18 @@ function scene:spawnEnemy(portal)
     enemy.xScale = scale
     enemy.yScale = scale
 
-    -- ToDo: нужно спавнить в сторону центра
-    enemy.x = portal.x + randomInt(-1, 1) * enemyWidth
-    enemy.y = portal.y + randomInt(-1, 1) * enemyHeight
+    local pos = self:calcMoveTowardsPosition(portal, self.player, math.random(100, 200))
+
+    local targetX = pos.x
+    local targetY = pos.y
+    enemy.x = portal.x
+    enemy.y = portal.y
 
     self.enemies[#self.enemies + 1] = enemy
 
-    -- плавное появление
+    -- плавное появление из центра портала в отведенную точку в сторону игрока
     enemy.alpha = 0
-    transition.to(enemy, { time = 400, alpha = 1 })
+    transition.to(enemy, { time = enemySpawnAnimDelay, alpha = 1, x = targetX, y = targetY })
 
     return enemy
 end
@@ -734,6 +744,11 @@ function scene:updatePortals(deltaTime)
 end
 
 function scene:enemyShotToPlayer(enemy)
+    if (system.getTimer() - enemy.createdAt) < (enemyShotFreezeAfterSpawn + enemySpawnAnimDelay) then
+        -- не стрелять в игрока сразу после появления
+        return
+    end
+
     if distanceBetween(enemy, self.player) > enemyShootMaxDistance then
         return
     end
