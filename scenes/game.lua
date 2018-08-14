@@ -52,6 +52,8 @@ local explosionImageSize = 64
 
 local groundSize = 1024
 
+local minimalDistanceFromPlayerToNewPortal = 450
+
 local gunsInfo = {
     -- время последнего выстрела из этой пушки (заполняется при инициализации)
     lastShots = {},
@@ -614,10 +616,16 @@ function scene:spawnPortal(first)
         radius = radius / 1.15
     end
 
-    local A = randomInt(360)
-    local angle = math.rad(A - 90)
-    portal.x = math.cos(angle) * radius
-    portal.y = math.sin(angle) * radius
+    -- выбор места под портал (чтобы не прямо рядом с игроком)
+    for try = 1, 10 do -- чтобы не бесконечно место выбирать
+        local angle = math.rad(randomInt(360) - 90)
+        portal.x = math.cos(angle) * radius
+        portal.y = math.sin(angle) * radius
+
+        if distanceBetween(portal, self.player) >= minimalDistanceFromPlayerToNewPortal then
+            break
+        end
+    end
 
     portal.lastTimeEnemySpawn = 0
 
