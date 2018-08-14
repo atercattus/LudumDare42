@@ -1405,16 +1405,25 @@ function scene:updateAmmoDrops(deltaTime)
         if not self:isObjInsideBorder(drop) then
             to_delete[#to_delete + 1] = i
         elseif hasCollidedCircle(self.player, drop) then
+            local can_delete = true
             if drop.gunType == gunTypeDropHeart then
-                audio.play(self.soundHeart)
-                self.playerHP = math.max(playerMaximumHealth, self.playerHP + drop.quantity)
-                self:updateHealthBar()
+                if self.playerHP < playerMaximumHealth then
+                    audio.play(self.soundHeart)
+                    self.playerHP = math.max(playerMaximumHealth, self.playerHP + drop.quantity)
+                    self:updateHealthBar()
+                else
+                    -- не поднимаем сердечки, если у нас и так уже максимальное здоровье
+                    can_delete = false
+                end
             else
                 audio.play(self.soundAmmo)
                 self.ammoAllowed[drop.gunType] = self.ammoAllowed[drop.gunType] + drop.quantity
                 self:updateAmmoAllowed(drop.gunType)
             end
-            to_delete[#to_delete + 1] = i
+
+            if can_delete then
+                to_delete[#to_delete + 1] = i
+            end
         end
     end
 
