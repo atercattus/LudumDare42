@@ -196,6 +196,8 @@ function scene:ammoGet(gunType)
     ammo.y = 0
     ammo.rotation = 0
     ammo.speed = gunsInfo.speeds[gunType]
+    ammo.xScale = 2
+    ammo.yScale = 2
 
     self.ammoInFlight[#self.ammoInFlight + 1] = ammo
 
