@@ -1608,7 +1608,7 @@ function scene:setupHealthBar()
     })
 
     self.healthBars = {}
-    for i = 1, 5 do -- для 10 здоровья максимум нужно 5 сердец (отрисовываются половинками)
+    for i = 1, playerMaximumHealth / 2 do
         local hb = display.newSprite(self.view, self.barsImageSheet, {
             name = "heart",
             start = 1,
