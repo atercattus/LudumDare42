@@ -277,10 +277,16 @@ function scene:onMouseEvent(event)
 end
 
 function scene:setupBorder()
+    display.setDefault("textureWrapX", "repeat")
+    display.setDefault("textureWrapY", "repeat")
+
     self.border = display.newCircle(self.levelGroup, 0, 0, self.borderRadius)
     self.border.fill = { type = "image", filename = "data/ground.png" }
     self.border.strokeWidth = 30
-    self.border:setStrokeColor(1, 0.3, 0.3)
+    self.border:setStrokeColor(178 / 256, 16 / 256, 48 / 256)
+
+    display.setDefault("textureWrapX", "clampToEdge")
+    display.setDefault("textureWrapY", "clampToEdge")
 end
 
 function scene:setupAim()
