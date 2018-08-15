@@ -1,6 +1,8 @@
 local composer = require("composer")
 local utils = require('utils')
 
+local appScale = appScale
+
 local round = math.round
 local sqrt = math.sqrt
 local tonumber = tonumber
@@ -61,6 +63,10 @@ local enemySpawnAnimDelay = 400
 
 -- запрет на это время стрелять сразу после появления из портала
 local enemyShotFreezeAfterSpawn = 1000
+
+local healthBarFrameFull = 1
+local healthBarFrameHalf = 2
+local healthBarFrameNone = 3
 
 local gunsInfo = {
     -- время последнего выстрела из этой пушки (заполняется при инициализации)
@@ -1134,8 +1140,23 @@ function scene:playerCheckCollisions()
 end
 
 function scene:updateHealthBar()
-    local newWidth = self.player.playerImage.width * (math.min(self.playerHP, playerMaximumHealth) / playerMaximumHealth)
-    transition.to(self.healthBar, { time = 200, width = newWidth, transition = easing.outBack })
+    local hp = self.playerHP
+    for i = 1, #self.healthBars do
+        local hb = self.healthBars[i]
+
+        local needIndex = 0
+        if hp >= i * 2 then
+            needIndex = healthBarFrameFull
+        elseif hp >= (i * 2) - 1 then
+            needIndex = healthBarFrameHalf
+        else
+            needIndex = healthBarFrameNone
+        end
+
+        if hb.frame ~= needIndex then
+            hb:setFrame(needIndex)
+        end
+    end
 end
 
 function scene:updatePlayer(deltaTime)
@@ -1166,10 +1187,6 @@ function scene:updatePlayer(deltaTime)
     -- перемещение игрока
     self.player.x = self.player.x + dX
     self.player.y = self.player.y + dY
-
-    -- полоска здоровья
-    self.healthBar.x = self.player.x
-    self.healthBar.y = self.player.y - 80
 
     -- "камера" следует за игроком
     self.levelGroup.x = self.levelGroup.x - dX
@@ -1582,13 +1599,32 @@ function scene:setupDebugText()
 end
 
 function scene:setupHealthBar()
-    self.healthBar = display.newRect(0, 0, 90, 18)
-    self.levelGroup:insert(self.healthBar)
+    local width = 80
 
-    self.healthBar.anchorX = 0.5
-    self.healthBar.anchorY = 1
+    self.barsImageSheet = graphics.newImageSheet("data/hearts.png", {
+        width = width,
+        height = 64,
+        numFrames = 3,
+    })
 
-    self.healthBar:setFillColor(1, 0, 0)
+    self.healthBars = {}
+    for i = 1, 5 do -- для 10 здоровья максимум нужно 5 сердец (отрисовываются половинками)
+        local hb = display.newSprite(self.view, self.barsImageSheet, {
+            name = "heart",
+            start = 1,
+            count = 3,
+        })
+        self.healthBars[i] = hb
+
+        hb:setFrame(healthBarFrameFull)
+
+        hb.x = display.safeScreenOriginX + (i - 1) * (width * appScale)
+        hb.y = 0
+        hb.anchorX = 0
+        hb.anchorY = 0
+        hb.xScale = appScale
+        hb.yScale = appScale
+    end
 end
 
 -- ===========================================================================================
@@ -1716,7 +1752,7 @@ function scene:reset()
 
     self.gameInPause = false
 
-    self.borderRadius = 800
+    self.borderRadius = 1000
     self.playerSpeed = 400
 
     self.enemyImageSheet = nil
@@ -1744,7 +1780,18 @@ function scene:reset()
     self.pauseText = nil
     self.debugText = nil
 
-    self.healthBar = nil
+    if self.barsImageSheet ~= nil then
+        self.barsImageSheet:removeSelf()
+        self.barsImageSheet = nil
+    end
+    self.barsImageSheet = nil
+
+    if self.healthBars ~= nil then
+        for i = 1, #self.healthBars do
+            self.healthBars[i]:removeSelf()
+        end
+        self.healthBars = {}
+    end
 end
 
 scene:addEventListener("show", function(event)
