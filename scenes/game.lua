@@ -58,6 +58,8 @@ local minimalDistanceFromPlayerToNewPortal = 450
 
 local playerMaximumHealth = 10
 
+local playerStandartSpeed = 350
+
 -- длительность появления из портала
 local enemySpawnAnimDelay = 400
 
@@ -1075,8 +1077,6 @@ function scene:portalDestroed(portalIdx)
 
     self.totalScore = self.totalScore + 100 -- да.... хардкод
 
-    self.playerSpeed = math.min(700, self.playerSpeed + 20)
-
     self.borderRadius = self.borderRadius + 250
     audio.play(self.soundExtension)
     transition.to(self.border.path, {
@@ -1759,7 +1759,7 @@ function scene:reset()
     self.gameInPause = false
 
     self.borderRadius = 1000
-    self.playerSpeed = 400
+    self.playerSpeed = playerStandartSpeed
 
     self.enemyImageSheet = nil
 
