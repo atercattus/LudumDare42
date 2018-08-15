@@ -1412,7 +1412,7 @@ function scene:updateAmmoDrops(deltaTime)
             if drop.gunType == gunTypeDropHeart then
                 if self.playerHP < playerMaximumHealth then
                     audio.play(self.soundHeart)
-                    self.playerHP = math.max(playerMaximumHealth, self.playerHP + drop.quantity)
+                    self.playerHP = math.min(playerMaximumHealth, self.playerHP + drop.quantity)
                     self:updateHealthBar()
                 else
                     -- не поднимаем сердечки, если у нас и так уже максимальное здоровье
