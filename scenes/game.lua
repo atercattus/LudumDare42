@@ -47,7 +47,7 @@ local gunTypeMaxValue = gunTypeRocketLauncher
 
 local gunTypeDropHeart = gunTypeMaxValue + 1 -- костыль для выпадения сердечек
 
-local rocketDamageRadius = 300
+local rocketDamageRadius = 200
 local explosionImageSize = 64
 
 local groundSize = 1024
@@ -1220,8 +1220,9 @@ function scene:explosion(posObj)
     self.levelGroup:insert(explosionImage)
     explosionImage.x = posObj.x
     explosionImage.y = posObj.y
-    explosionImage.xScale = rocketDamageRadius / explosionImageSize
-    explosionImage.yScale = rocketDamageRadius / explosionImageSize
+    local scale = (2 * rocketDamageRadius) / explosionImageSize
+    explosionImage.xScale = scale
+    explosionImage.yScale = scale
 
     explosionImage:addEventListener("sprite", function(event)
         local thisSprite = event.target
