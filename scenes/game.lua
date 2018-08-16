@@ -420,6 +420,16 @@ function scene:shot()
         if cnt == 0 then
             -- нечем стрелять
             audio.play(self.soundNoAmmo)
+
+            -- меняем ствол
+            for newGunType = gunType - 1, gunTypePistol + 1, -1 do
+                if self.ammoAllowed[newGunType] > 0 then
+                    self:switchGun(newGunType)
+                    return
+                end
+            end
+            self:switchGun(gunTypePistol)
+
             return
         end
         self.ammoAllowed[gunType] = cnt - 1
