@@ -317,12 +317,12 @@ function scene:setupScores()
         width = self.W,
         font = fontName,
         fontSize = 54,
-        align = 'center',
+        align = 'right',
     })
     self.scoresText:setFillColor(1, 1, 0.4)
-    self.scoresText.anchorX = 0.5
+    self.scoresText.anchorX = 1
     self.scoresText.anchorY = 0
-    self.scoresText.x = self.W / 2
+    self.scoresText.x = self.W
     self.scoresText.y = 0
 end
 
