@@ -621,6 +621,8 @@ end
 function scene:spawnPortal(first)
     self.portalsCreatedForAllTime = self.portalsCreatedForAllTime + 1
 
+    self:updateScores()
+
     local portal = display.newImageRect(self.levelGroup, "data/portal.png", 128, 128)
     portal.name = "portal"
     portal.xScale = 1.2
@@ -1070,6 +1072,8 @@ function scene:portalDestroed(portalIdx)
 
     portal:removeSelf()
     table.remove(self.portals, portalIdx)
+
+    self:updateScores()
 
     self.totalScore = self.totalScore + 100 -- да.... хардкод
 
@@ -1669,8 +1673,6 @@ function scene:onEnterFrame(event)
     self:updateEnemies(deltaTime)
     self:updateAmmos(deltaTime)
     self:updateAmmoDrops(deltaTime)
-
-    self:updateScores()
 end
 
 function scene:create(event)
