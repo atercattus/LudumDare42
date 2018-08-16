@@ -1082,6 +1082,7 @@ function scene:portalDestroed(portalIdx)
     transition.to(self.border.path, {
         time = 1000,
         radius = self.borderRadius,
+        transition = easing.outBack,
         onComplete = function()
             self.borderRadius = self.border.path.radius
         end,
