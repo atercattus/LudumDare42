@@ -162,15 +162,7 @@ function scene:updateActiveGunInUI(currentGunType)
         currentGunType = gunTypePistol
     end
 
-    for gunType, text in ipairs(self.ammoBlocksTexts) do
-        if currentGunType == gunType then
-            text:setFillColor(1, 1, 1)
-            text.size = 54
-        else
-            text:setFillColor(1, 1, 0.4)
-            text.size = 54
-        end
-    end
+    self.activeGunSelection.x = self.ammoBlocksTexts[currentGunType].iconObj.x
 end
 
 function scene:switchGun(num)
@@ -1481,6 +1473,14 @@ function scene:setupGunsAndAmmo()
     }
     self.ammoBlocksImageSheet = graphics.newImageSheet("data/ammo_blocks.png", options)
 
+    local lastHeartSprite = self.healthBars[#self.healthBars]
+    local X = lastHeartSprite.x + lastHeartSprite.contentWidth * 1.5
+
+    self.activeGunSelection = display.newRoundedRect(self.view, 0, 0, 1, 1, 10) -- размеры задаются ниже
+    self.activeGunSelection.anchorX = 0
+    self.activeGunSelection.anchorY = 0
+    self.activeGunSelection.fill = { 0.5, 0.5, 0.5 }
+
     for gunType = 1, self.gunsCount do
         self.ammoAllowed[gunType] = 0
 
@@ -1490,10 +1490,12 @@ function scene:setupGunsAndAmmo()
         self.view:insert(icon)
         self.ammoBlocksIcons[gunType] = icon
         icon.fill = { type = "image", sheet = self.ammoBlocksImageSheet, frame = gunType }
-        icon.x = 0
-        icon.y = 10 + (gunType - 1) * ammoBlockHeight * ammoIconScale
+        icon.x = X + (gunType - 1) * (2 * lastHeartSprite.contentWidth)
+        icon.y = -10
         icon.anchorX = 0
         icon.anchorY = 0
+        icon.xScale = appScale
+        icon.yScale = appScale
 
         local text = display.newText({
             parent = self.view,
@@ -1503,16 +1505,21 @@ function scene:setupGunsAndAmmo()
             fontSize = 54,
             align = 'left',
         })
+        text.iconObj = icon
         text:setFillColor(1, 1, 0.4)
         text.anchorX = 0
-        text.anchorY = 0
+        text.anchorY = 0.5
         text.x = icon.x + icon.contentWidth + 10
-        text.y = icon.y * 1.03
+        text.y = icon.y + icon.contentHeight / 2
 
         self.ammoBlocksTexts[gunType] = text
 
         self:updateAmmoAllowed(gunType)
     end
+
+    local gunInfoWidth = self.ammoBlocksTexts[2].x - self.ammoBlocksTexts[1].x
+    self.activeGunSelection.width = gunInfoWidth
+    self.activeGunSelection.height = lastHeartSprite.contentHeight
 end
 
 function scene:setupEnemies()
@@ -1761,6 +1768,11 @@ function scene:reset()
     self.ammoImageSheet = nil
     self.ammoBlocksImageSheet = nil
 
+    if self.activeGunSelection ~= nil then
+        self.activeGunSelection:removeSelf()
+        self.activeGunSelection = nil
+    end
+
     self.enemyAmmoImageSheet = nil
     self.pointsImageSheet = nil
     self.explosionImageSheet = nil
@@ -1779,10 +1791,6 @@ function scene:reset()
     self.pauseText = nil
     self.debugText = nil
 
-    if self.barsImageSheet ~= nil then
-        self.barsImageSheet:removeSelf()
-        self.barsImageSheet = nil
-    end
     self.barsImageSheet = nil
 
     if self.healthBars ~= nil then
@@ -1813,8 +1821,6 @@ scene:addEventListener("show", function(event)
         scene:setupScores()
         scene:updateScores()
 
-        scene:setupGunsAndAmmo()
-
         scene:setupEnemies()
         scene:setupEnemyAmmo()
 
@@ -1823,16 +1829,19 @@ scene:addEventListener("show", function(event)
         scene:setupFastEnemyExplosion()
 
         scene:setupBorder()
-        scene:setupPlayer()
 
         scene:setupShotFire()
-
-        scene:spawnPortal(true)
 
         scene:setupPauseText()
         scene:setupDebugText()
 
         scene:setupHealthBar()
+
+        scene:setupGunsAndAmmo()
+
+        scene:setupPlayer()
+
+        scene:spawnPortal(true)
 
         Runtime:addEventListener("enterFrame", onEnterFrame)
         Runtime:addEventListener("key", onKey)
