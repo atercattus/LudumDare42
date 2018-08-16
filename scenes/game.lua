@@ -2,6 +2,7 @@ local composer = require("composer")
 local utils = require('utils')
 
 local appScale = appScale
+local gameBuildVersion = gameBuildVersion
 
 local round = math.round
 local sqrt = math.sqrt
@@ -323,29 +324,22 @@ function scene:setupScores()
     self.scoresText.anchorY = 0
     self.scoresText.x = self.W / 2
     self.scoresText.y = 0
-
-    self.raduisText = display.newText({
-        parent = self.view,
-        text = "",
-        width = self.W,
-        font = fontName,
-        fontSize = 54,
-        align = 'right',
-    })
-    self.raduisText:setFillColor(1, 1, 0.4)
-    self.raduisText.anchorX = 1
-    self.raduisText.anchorY = 0
-    self.raduisText.x = self.W
-    self.raduisText.y = 0
 end
 
 function scene:updateScores()
     self.scoresText.text = "Portals: " .. (self.portalsCreatedForAllTime - #self.portals)
-    self.raduisText.text = "Radius: " .. round(self.borderRadius)
 end
 
 function scene:updateDebug()
-    self.debugText.text = "FPS: " .. display.fps
+    local currentTime = system.getTimer()
+    if self.updateDebugLastTime == nil then
+        self.updateDebugLastTime = currentTime
+    elseif self.updateDebugLastTime + 500 > currentTime then
+        return
+    end
+    self.updateDebugLastTime = currentTime
+
+    self.debugText.text = "Build: " .. gameBuildVersion .. " FPS: " .. display.fps .. " PlayerSpeed: " .. self.playerSpeed
 end
 
 function scene:isObjInsideBorder(obj, customSize)
@@ -1592,15 +1586,15 @@ end
 function scene:setupDebugText()
     self.debugText = display.newText({
         parent = self.view,
-        text = "PAUSE",
+        text = "DEBUG",
         font = fontName,
         fontSize = 30,
-        align = 'right',
+        align = 'left',
     })
     self.debugText:setFillColor(0.8, 0.8, 0.8)
-    self.debugText.anchorX = 1
+    self.debugText.anchorX = 0
     self.debugText.anchorY = 1
-    self.debugText.x = self.W
+    self.debugText.x = display.screenOriginX
     self.debugText.y = self.H
 end
 
@@ -1746,7 +1740,6 @@ function scene:reset()
     self.ammoDrops = {}
     self.enemyAmmoInFlight = {}
     self.scoresText = nil
-    self.raduisText = nil
 
     self.portalsCreatedForAllTime = 0
     self.totalScore = 0
