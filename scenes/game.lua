@@ -964,7 +964,7 @@ function scene:updateEnemies(deltaTime)
 
         if not self:isObjInsideBorder(enemy) then
             if enemy.enemyType == enemyTypeGuard then
-                -- Страж не гибнет от барьера, а как и портал движется с ним
+                -- Страж не гибнет от барьера, а, как и портал, движется с ним
                 self:moveTo(enemy, { x = 0, y = 0 }, borderRadiusSpeed, deltaTime)
             else
                 to_delete[#to_delete + 1] = i
@@ -975,7 +975,7 @@ function scene:updateEnemies(deltaTime)
     end
 
     for i = #to_delete, 1, -1 do
-        self:enemyDied(to_delete[i])
+        self:enemyDied(to_delete[i], true)
     end
 end
 
