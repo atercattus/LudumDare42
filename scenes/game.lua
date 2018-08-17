@@ -1021,7 +1021,6 @@ function scene:enemyGotDamage(enemyIdx, ammo)
 
     if enemy.enemyType == enemyTypeGuard then
         -- страж портала неуязвим
-        self:makeSomeBlood(enemy, true)
         return
     end
 
