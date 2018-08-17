@@ -944,7 +944,7 @@ function scene:dropAmmo(enemyType, enemyObj)
     self.ammoDrops[#self.ammoDrops + 1] = drop
 end
 
-function scene:enemyDied(enemyIdx, denyDropAmmo)
+function scene:enemyDied(enemyIdx, denyDropAmmo, playerAmmo)
     local enemy = self.enemies[enemyIdx]
 
     if not denyDropAmmo then
@@ -953,10 +953,14 @@ function scene:enemyDied(enemyIdx, denyDropAmmo)
 
     self.totalScore = self.totalScore + enemyInfo.damages[enemy.enemyType]
 
+    local diedPos = self:calcMoveTowardsPosition(enemy, playerAmmo, -50)
+
     table.remove(self.enemies, enemyIdx)
     transition.to(enemy, {
         time = 200,
         alpha = 0,
+        x = diedPos.x,
+        y = diedPos.y,
         onComplete = function()
             enemy:removeSelf()
         end,
@@ -1036,12 +1040,13 @@ function scene:enemyGotDamage(enemyIdx, ammo)
         return
     end
 
+    self:makeSomeBlood(enemy, true)
+
     local HP = enemy.HP - damage
     if HP <= 0 then
-        self:enemyDied(enemyIdx)
+        self:enemyDied(enemyIdx, false, ammo)
     else
         enemy.HP = HP
-        self:makeSomeBlood(enemy, true)
     end
 end
 
@@ -1060,7 +1065,7 @@ function scene:getNewPortslsCount()
     end
 end
 
-function scene:portalDestroed(portalIdx)
+function scene:portalDestroed(portalIdx, playerAmmo)
     local portal = self.portals[portalIdx]
 
     if portal.guard then
@@ -1069,7 +1074,7 @@ function scene:portalDestroed(portalIdx)
             if enemy == portal.guard then
                 enemy.portal = nil
                 portal.guard = nil
-                self:enemyDied(enemyIdx)
+                self:enemyDied(enemyIdx, false, playerAmmo)
                 break
             end
         end
@@ -1121,7 +1126,7 @@ function scene:portalGotDamage(portalIdx, ammo)
 
     local HP = portal.HP - damage
     if HP <= 0 then
-        self:portalDestroed(portalIdx)
+        self:portalDestroed(portalIdx, ammo)
     else
         portal.HP = HP
         self:makeSomeBlood(portal, true)
