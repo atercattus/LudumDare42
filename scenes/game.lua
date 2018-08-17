@@ -709,7 +709,8 @@ function scene:spawnEnemy(portal)
     enemy.xScale = scale
     enemy.yScale = scale
 
-    local pos = self:calcMoveTowardsPosition(portal, self.player, math.random(100, 200))
+    local spawnAnimSpeed = math.random(100, 200)
+    local pos = self:calcMoveTowardsPosition(portal, self.player, spawnAnimSpeed)
 
     local targetX = pos.x
     local targetY = pos.y
@@ -720,7 +721,16 @@ function scene:spawnEnemy(portal)
 
     -- плавное появление из центра портала в отведенную точку в сторону игрока
     enemy.alpha = 0
-    transition.to(enemy, { time = enemySpawnAnimDelay, alpha = 1, x = targetX, y = targetY })
+    enemy.inSpawnAnim = true
+    transition.to(enemy, {
+        time = enemySpawnAnimDelay / 200 * spawnAnimSpeed,
+        alpha = 1,
+        x = targetX,
+        y = targetY,
+        onComplete = function()
+            enemy.inSpawnAnim = false
+        end
+    })
 
     return enemy
 end
@@ -962,7 +972,9 @@ function scene:updateEnemies(deltaTime)
         local scale = math.abs(enemy.xScale)
         enemy.xScale = playerInTheLeft and -scale or scale
 
-        if not self:isObjInsideBorder(enemy) then
+        if enemy.inSpawnAnim then
+            -- Пока идет анимация, никаких действий. И уж тем более никакой гибели от Барьера
+        elseif not self:isObjInsideBorder(enemy) then
             if enemy.enemyType == enemyTypeGuard then
                 -- Страж не гибнет от барьера, а, как и портал, движется с ним
                 self:moveTo(enemy, { x = 0, y = 0 }, borderRadiusSpeed, deltaTime)
