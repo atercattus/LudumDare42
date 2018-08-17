@@ -2,7 +2,7 @@ local composer = require("composer")
 
 local scene = composer.newScene()
 
-local gameName = 'Oh no! This is monsters!'
+local gameName = 'Oh no! These are monsters!'
 
 local fontName = 'data/ErikaOrmig.ttf' -- https://www.1001fonts.com/erika-ormig-font.html
 
