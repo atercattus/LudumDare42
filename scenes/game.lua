@@ -953,7 +953,9 @@ function scene:enemyDied(enemyIdx, denyDropAmmo, playerAmmo)
 
     self.totalScore = self.totalScore + enemyInfo.damages[enemy.enemyType]
 
-    local diedPos = self:calcMoveTowardsPosition(enemy, playerAmmo, -50)
+    local diedPos = (playerAmmo ~= nil)
+            and self:calcMoveTowardsPosition(enemy, playerAmmo, -50)
+            or { x = enemy.x, y = enemy.y }
 
     table.remove(self.enemies, enemyIdx)
     transition.to(enemy, {
