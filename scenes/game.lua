@@ -59,7 +59,7 @@ local minimalDistanceFromPlayerToNewPortal = 450
 
 local playerMaximumHealth = 10
 
-local playerStandartSpeed = 350
+local playerStandartSpeed = 550
 
 -- длительность появления из портала
 local enemySpawnAnimDelay = 400
@@ -112,10 +112,10 @@ local enemyShooterDistance = 500 -- расстояние, на котором с
 local enemyShootMaxDistance = 800 -- максимальное расстояние от врага до игрока, при котором враг будет стрелять (чтобы снаряды не летели через весь уровень)
 
 local enemyShooterShootInterval = 2000 -- как часто стрелок стреляет
-local enemyShooterShootSpeed = 400 -- скорость выстрелов стрелка
+local enemyShooterShootSpeed = playerStandartSpeed * 1.2 -- скорость выстрелов стрелка
 
 local enemyGuardShootInterval = 6000 -- как часто страж стреляет
-local enemyGuardShootSpeed = 200 -- скорость выстрелов стража
+local enemyGuardShootSpeed = playerStandartSpeed / 2 -- скорость выстрелов стража
 
 local enemyTypePortal = 0
 local enemyTypeSlow = 2 -- медленно идет на игрока
@@ -126,10 +126,10 @@ local enemyTypeMaxValue = enemyTypeFast
 
 local enemyInfo = {
     speeds = {
-        [enemyTypeSlow] = 70,
-        [enemyTypeFast] = 300,
-        [enemyTypeShooter] = 100,
-        [enemyTypeGuard] = 60,
+        [enemyTypeSlow] = playerStandartSpeed / 3,
+        [enemyTypeFast] = playerStandartSpeed * 1.1,
+        [enemyTypeShooter] = playerStandartSpeed / 2,
+        [enemyTypeGuard] = 100,
     },
     damages = {
         [enemyTypeSlow] = 1,
