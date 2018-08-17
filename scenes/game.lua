@@ -331,7 +331,7 @@ function scene:updateDebug()
     end
     self.updateDebugLastTime = currentTime
 
-    self.debugText.text = "Build: " .. gameBuildVersion .. " FPS: " .. display.fps .. " PlayerSpeed: " .. self.playerSpeed
+    self.debugText.text = "Build: " .. gameBuildVersion .. " FPS: " .. scene.FPS
 end
 
 function scene:isObjInsideBorder(obj, customSize)
@@ -1662,6 +1662,8 @@ function scene:onEnterFrame(event)
         return
     end
 
+    self.renderedFrames = self.renderedFrames + 1
+
     self:updateDebug()
 
     if self.gameInPause then
@@ -1856,6 +1858,15 @@ scene:addEventListener("show", function(event)
 
         scene:spawnPortal(true)
 
+        -- для подсчета FPS самому
+        scene.renderedFrames = 0
+        scene.FPS = display.fps -- хоть что-то, а не 0
+        local previousFPS = 0
+        scene.FPSCalcTimer = timer.performWithDelay(1000, function()
+            scene.FPS = scene.renderedFrames - previousFPS -- ToDo: хорошо бы поделить на время
+            previousFPS = scene.renderedFrames
+        end, -1)
+
         Runtime:addEventListener("enterFrame", onEnterFrame)
         Runtime:addEventListener("key", onKey)
         Runtime:addEventListener("mouse", onMouseEvent)
@@ -1870,6 +1881,9 @@ scene:addEventListener("hide", function(event)
         end
 
         audio.dispose(scene.soundMelody)
+
+        timer.cancel(scene.FPSCalcTimer)
+        scene.FPSCalcTimer = nil
 
         Runtime:removeEventListener("enterFrame", onEnterFrame)
         Runtime:removeEventListener("key", onKey)
