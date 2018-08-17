@@ -322,8 +322,7 @@ function scene:updateScores()
     self.scoresText.text = "Portals: " .. (self.portalsCreatedForAllTime - #self.portals)
 end
 
-function scene:updateDebug()
-    local currentTime = system.getTimer()
+function scene:updateDebug(currentTime)
     if self.updateDebugLastTime == nil then
         self.updateDebugLastTime = currentTime
     elseif self.updateDebugLastTime + 500 > currentTime then
@@ -1682,7 +1681,7 @@ function scene:onEnterFrame(event)
 
     self.renderedFrames = self.renderedFrames + 1
 
-    self:updateDebug()
+    self:updateDebug(event.time)
 
     if self.gameInPause then
         return
