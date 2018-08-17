@@ -1525,7 +1525,7 @@ function scene:setupGunsAndAmmo()
 
         local text = display.newText({
             parent = self.view,
-            text = (gunType == gunTypePistol) and "--" or "0",
+            text = (gunType == gunTypePistol) and "Inf" or "0",
             width = self.W,
             font = fontName,
             fontSize = 54,

@@ -1,6 +1,6 @@
 appScale = 1.5
 
-gameBuildVersion = "2018.08.16"
+gameBuildVersion = "2018.08.17"
 
 application = {
     content = {
