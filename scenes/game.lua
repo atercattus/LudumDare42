@@ -138,9 +138,9 @@ local enemyInfo = {
         [enemyTypeGuard] = 3,
     },
     HPs = {
-        [enemyTypeSlow] = 2,
+        [enemyTypeSlow] = 3,
         [enemyTypeFast] = 5,
-        [enemyTypeShooter] = 4,
+        [enemyTypeShooter] = 5,
         [enemyTypeGuard] = 99999, -- он програмно неуязвим
     },
     scales = {
