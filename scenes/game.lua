@@ -315,7 +315,7 @@ function scene:setupScores()
     self.scoresText.anchorX = 1
     self.scoresText.anchorY = 0
     self.scoresText.x = self.W
-    self.scoresText.y = 0
+    self.scoresText.y = display.safeScreenOriginY
 end
 
 function scene:updateScores()
@@ -1508,7 +1508,7 @@ function scene:setupGunsAndAmmo()
     local lastHeartSprite = self.healthBars[#self.healthBars]
     local X = lastHeartSprite.x + lastHeartSprite.contentWidth * 1.5
 
-    self.activeGunSelection = display.newRoundedRect(self.view, 0, 0, 1, 1, 10) -- размеры задаются ниже
+    self.activeGunSelection = display.newRoundedRect(self.view, 0, display.safeScreenOriginY, 1, 1, 10) -- размеры задаются ниже
     self.activeGunSelection.anchorX = 0
     self.activeGunSelection.anchorY = 0
     self.activeGunSelection.fill = { 0.5, 0.5, 0.5 }
@@ -1523,7 +1523,7 @@ function scene:setupGunsAndAmmo()
         self.ammoBlocksIcons[gunType] = icon
         icon.fill = { type = "image", sheet = self.ammoBlocksImageSheet, frame = gunType }
         icon.x = X + (gunType - 1) * (2 * lastHeartSprite.contentWidth)
-        icon.y = -10
+        icon.y = display.safeScreenOriginY - 10
         icon.anchorX = 0
         icon.anchorY = 0
         icon.xScale = appScale
@@ -1634,7 +1634,7 @@ function scene:setupDebugText()
     self.debugText.anchorX = 0
     self.debugText.anchorY = 1
     self.debugText.x = display.screenOriginX
-    self.debugText.y = self.H
+    self.debugText.y = display.safeScreenOriginY + display.safeActualContentHeight
 end
 
 function scene:setupHealthBar()
@@ -1658,7 +1658,7 @@ function scene:setupHealthBar()
         hb:setFrame(healthBarFrameFull)
 
         hb.x = display.safeScreenOriginX + (i - 1) * (width * appScale)
-        hb.y = 0
+        hb.y = display.safeScreenOriginY
         hb.anchorX = 0
         hb.anchorY = 0
         hb.xScale = appScale
