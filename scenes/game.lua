@@ -569,8 +569,8 @@ end
 
 function scene:setupPlayer()
     local options = {
-        width = 84,
-        height = 136,
+        width = 96,
+        height = 144,
         numFrames = 4,
     }
     local imageSheet = graphics.newImageSheet("data/player.png", options)
@@ -585,7 +585,7 @@ function scene:setupPlayer()
         },
         {
             name = "run",
-            frames = { 2, 1, 4, 1 },
+            frames = { 2, 3, 4, 1 },
             time = 350,
             loopCount = 0,
             loopDirection = "forward"
