@@ -3,7 +3,6 @@ local gameBuildVersion = gameBuildVersion
 local fontName = fontName
 
 local require = require
-local print = print
 local tostring = tostring
 local mathSqrt = math.sqrt
 local mathMax = math.max
@@ -704,11 +703,27 @@ end
 function scene:spawnEnemy(portal)
     local enemyType = self:getNewEnemyType(portal)
 
-    local enemy = displayNewRect(0, 0, enemyWidth, enemyHeight)
-    self.levelGroup:insert(enemy)
+    if self.poolEnemies == nil then
+        local sceneSelf = self
+        self.poolEnemies = pool:new(function()
+            local enemy = displayNewRect(0, 0, enemyWidth, enemyHeight)
+            sceneSelf.levelGroup:insert(enemy)
+            enemy.createdAt = systemGetTimer()
+            enemy.name = "enemy"
+            enemy.fill = { type = "image", sheet = self.enemyImageSheet, frame = enemyType }
+            enemy.alpha = 1
+            enemy.anchorX = 0.5
+            enemy.anchorY = 0.5
+
+            return enemy
+        end)
+    end
+
+    local enemy = self.poolEnemies:get()
+    enemy.isVisible = true
+    enemy.lastShotTime = 0 -- ToDo: надо бы сделать reset метод
 
     enemy.HP = enemyInfo.HPs[enemyType]
-    enemy.createdAt = systemGetTimer()
 
     if enemyType == enemyTypeGuard then
         enemy.portal = portal
@@ -718,12 +733,10 @@ function scene:spawnEnemy(portal)
         enemy.distanceMult = 0.7
     end
 
-    enemy.name = "enemy"
     enemy.enemyType = enemyType
 
-    enemy.fill = { type = "image", sheet = self.enemyImageSheet, frame = enemyType }
-    enemy.anchorX = 0.5
-    enemy.anchorY = 0.5
+    --enemy.fill = { type = "image", sheet = self.enemyImageSheet, frame = enemyType }
+    enemy.fill.frame = enemyType
 
     local scale = enemyInfo.scales[enemyType]
     enemy.xScale = scale
@@ -753,6 +766,11 @@ function scene:spawnEnemy(portal)
     })
 
     return enemy
+end
+
+function scene:enemyPut(enemy)
+    enemy.isVisible = false
+    self.poolEnemies:put(enemy)
 end
 
 function scene:portalSpawnInterval()
@@ -979,13 +997,14 @@ function scene:enemyDied(enemyIdx, denyDropAmmo, playerAmmo)
             or { x = enemy.x, y = enemy.y }
 
     tableRemove(self.enemies, enemyIdx)
+    local sceneSelf = self
     transitionTo(enemy, {
         time = 200,
         alpha = 0,
         x = diedPos.x,
         y = diedPos.y,
         onComplete = function()
-            enemy:removeSelf()
+            sceneSelf:enemyPut(enemy)
         end,
     })
 end
@@ -1871,7 +1890,15 @@ function scene:reset()
         self.healthBars = {}
     end
 
-    self.poolBullets = nil
+    if self.poolBullets ~= nil then
+        self.poolBullets:clean(function(bullet) bullet:removeSelf() end)
+        self.poolBullets = nil
+    end
+
+    if self.poolEnemies ~= nil then
+        self.poolEnemies:clean(function(enemy) enemy:removeSelf() end)
+        self.poolEnemies = nil
+    end
 end
 
 scene:addEventListener("show", function(event)
