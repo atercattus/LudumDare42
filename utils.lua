@@ -1,6 +1,10 @@
 local mathSqrt = math.sqrt
 local mathDeg = math.deg
+local mathRad = math.rad
 local mathAtan = math.atan
+local mathSin = math.sin
+local mathCos = math.cos
+local mathRound = math.round
 
 local M = {}
 
@@ -41,6 +45,29 @@ end
 function M.hasCollidedCircle(obj1, obj2)
     local minimalDistance = (obj2.contentWidth / 2) + (obj1.contentWidth / 2)
     return M.distanceBetween(obj1, obj2) < minimalDistance
+end
+
+function M.sinCos(angleDeg)
+    if M.sinCosDegTable == nil then
+        M.sinCosDegTable = {}
+        for angle = 0, 359 do
+            local rad = mathRad(angle)
+            M.sinCosDegTable[angle] = { mathSin(rad), mathCos(rad) }
+        end
+    end
+
+    angleDeg = mathRound(angleDeg)
+
+    if angleDeg < 0 then
+        angleDeg = 360 - ((-angleDeg) % 360)
+    end
+
+    if angleDeg >= 360 then
+        angleDeg = angleDeg % 360
+    end
+
+    -- ToDo: возвращается не копия. так что было бы неплохо защищить от изменения через __newindex
+    return M.sinCosDegTable[angleDeg]
 end
 
 return M

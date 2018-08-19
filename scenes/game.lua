@@ -6,9 +6,6 @@ local require = require
 local print = print
 local tostring = tostring
 local mathSqrt = math.sqrt
-local mathRad = math.rad
-local mathSin = math.sin
-local mathCos = math.cos
 local mathMax = math.max
 local mathMin = math.min
 local mathAbs = math.abs
@@ -38,6 +35,7 @@ local vectorLen = utils.vectorLen
 local distanceBetween = utils.distanceBetween
 local vector = utils.vector
 local hasCollidedCircle = utils.hasCollidedCircle
+local sinCos = utils.sinCos
 
 -- ===============
 -- КОНСТАНТЫ
@@ -387,13 +385,11 @@ function scene:moveTo(obj, target, speed, deltaTime)
 end
 
 function scene:calcMoveForwardPosition(obj, delta)
-    local angle = mathRad(obj.rotation)
-    local vec = { x = mathCos(angle), y = mathSin(angle) }
-
-    vec.x = vec.x * delta
-    vec.y = vec.y * delta
-
-    return { x = obj.x + vec.x, y = obj.y + vec.y }
+    local vec = sinCos(obj.rotation)
+    return {
+        x = obj.x + vec[2] * delta,
+        y = obj.y + vec[1] * delta
+    }
 end
 
 function scene:moveForward(obj, delta)
@@ -657,9 +653,9 @@ function scene:spawnPortal(first)
 
     -- выбор места под портал (чтобы не прямо рядом с игроком)
     for try = 1, 10 do -- чтобы не бесконечно место выбирать
-        local angle = mathRad(mathRandom(360) - 90)
-        portal.x = mathCos(angle) * radius
-        portal.y = mathSin(angle) * radius
+        local vec = sinCos(mathRandom(360) - 90)
+        portal.x = vec[2] * radius
+        portal.y = vec[1] * radius
 
         if distanceBetween(portal, self.player) >= minimalDistanceFromPlayerToNewPortal then
             break
