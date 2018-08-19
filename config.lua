@@ -1,6 +1,6 @@
 appScale = 1.5
 
-gameBuildVersion = "2018.08.18"
+gameBuildVersion = "2018.08.19"
 
 gameName = 'Oh no! This are monsters!'
 
