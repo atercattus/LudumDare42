@@ -1400,7 +1400,9 @@ function scene:updateAmmo(ammo, deltaTime)
     local got_damage = {}
     for enemyIdx = 1, #self.enemies do
         local enemy = self.enemies[enemyIdx]
-        if hasCollidedCircle(ammo, enemy) then
+        if enemy == nil then
+            -- уже удален
+        elseif hasCollidedCircle(ammo, enemy) then
             if not self:ammoCollideAnim(ammo, enemy) then -- может удалять то, что было задано в got_damage
                 got_damage[#got_damage + 1] = enemyIdx
             end
