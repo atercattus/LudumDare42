@@ -2,6 +2,10 @@ appScale = 1.5
 
 gameBuildVersion = "2018.08.18"
 
+gameName = 'Oh no! This are monsters!'
+
+fontName = 'data/ErikaOrmig.ttf' -- https://www.1001fonts.com/erika-ormig-font.html
+
 application = {
     content = {
         width = appScale * 900,
