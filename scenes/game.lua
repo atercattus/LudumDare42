@@ -15,7 +15,6 @@ local mathAbs = math.abs
 local mathRandom = math.random
 local mathFloor = math.floor
 local tonumber = tonumber
-local ipairs = ipairs
 local Runtime = Runtime
 
 local display = display
@@ -244,7 +243,7 @@ function scene:onKey(event)
                 audio.resume()
             end
         elseif "f12" == event.keyName then -- ToDo: выпилить из релиза
-            for gunType, _ in ipairs(self.ammoAllowed) do
+            for gunType = 1, #self.ammoAllowed do
                 self.ammoAllowed[gunType] = 1000 + self.ammoAllowed[gunType]
                 self:updateAmmoAllowed(gunType)
             end
@@ -779,7 +778,8 @@ function scene:updatePortal(portal, deltaTime)
 end
 
 function scene:updatePortals(deltaTime)
-    for i, portal in ipairs(self.portals) do
+    for i = 1, #self.portals do
+        local portal = self.portals[i]
         if not self:isObjInsideBorder(portal) then
             self:moveTo(portal, { x = 0, y = 0 }, borderRadiusSpeed, deltaTime)
         end
@@ -992,7 +992,9 @@ end
 function scene:updateEnemies(deltaTime)
     local to_delete = {}
 
-    for i, enemy in ipairs(self.enemies) do
+    for i = 1, #self.enemies do
+        local enemy = self.enemies[i]
+
         -- поворот в сторону игрока
         local playerInTheLeft = self.player.x < enemy.x
         local scale = mathAbs(enemy.xScale)
@@ -1092,7 +1094,8 @@ function scene:portalDestroed(portalIdx, playerAmmo)
 
     if portal.guard then
         -- если у портала был Страж, то он тоже гибнет
-        for enemyIdx, enemy in ipairs(self.enemies) do
+        for enemyIdx = 1, #self.enemies do
+            local enemy = self.enemies[enemyIdx]
             if enemy == portal.guard then
                 enemy.portal = nil
                 portal.guard = nil
@@ -1165,7 +1168,8 @@ function scene:playerCheckCollisions()
         return
     end
 
-    for enemyIdx, enemy in ipairs(self.enemies) do
+    for enemyIdx = 1, #self.enemies do
+        local enemy = self.enemies[enemyIdx]
         if hasCollidedCircle(self.player, enemy) then
             self:playerGotDamage(self:getEnemyDamage(enemy))
             if enemy.enemyType == enemyTypeFast then
@@ -1176,7 +1180,8 @@ function scene:playerCheckCollisions()
         end
     end
 
-    for i, portal in ipairs(self.portals) do
+    for i = 1, #self.portals do
+        local portal = self.portals[i]
         if hasCollidedCircle(self.player, portal) then
             self:playerGotDamage(damageFromPortal)
             return
@@ -1359,7 +1364,8 @@ function scene:ammoCollideAnim(ammo, enemyOrPortal)
 
     -- нужно нанести урон всем противникам в области
     local to_delete = {}
-    for enemyIdx, enemy in ipairs(self.enemies) do
+    for enemyIdx = 1, #self.enemies do
+        local enemy = self.enemies[enemyIdx]
         if distanceBetween(ammo, enemy) < rocketDamageRadius then
             to_delete[#to_delete + 1] = enemyIdx
         end
@@ -1371,7 +1377,8 @@ function scene:ammoCollideAnim(ammo, enemyOrPortal)
     end
 
     local to_delete = {}
-    for portalIdx, portal in ipairs(self.portals) do
+    for portalIdx = 1, #self.portals do
+        local portal = self.portals[portalIdx]
         if distanceBetween(ammo, portal) < rocketDamageRadius then
             to_delete[#to_delete + 1] = portalIdx
         end
@@ -1390,7 +1397,8 @@ function scene:updateAmmo(ammo, deltaTime)
     local collided = false
 
     local got_damage = {}
-    for enemyIdx, enemy in ipairs(self.enemies) do
+    for enemyIdx = 1, #self.enemies do
+        local enemy = self.enemies[enemyIdx]
         if hasCollidedCircle(ammo, enemy) then
             if not self:ammoCollideAnim(ammo, enemy) then -- может удалять то, что было задано в got_damage
                 got_damage[#got_damage + 1] = enemyIdx
@@ -1404,7 +1412,8 @@ function scene:updateAmmo(ammo, deltaTime)
     end
 
     local got_damage = {}
-    for i, portal in ipairs(self.portals) do
+    for i = 1, #self.portals do
+        local portal = self.portals[i]
         if hasCollidedCircle(ammo, portal) then
             if not self:ammoCollideAnim(ammo, portal) then -- может удалять то, что было задано в got_damage
                 got_damage[#got_damage + 1] = i
@@ -1429,7 +1438,9 @@ end
 function scene:updateAmmos(deltaTime)
     -- Пули игрока
     local to_delete = {}
-    for i, ammo in ipairs(self.ammoInFlight) do
+    for i = 1, #self.ammoInFlight do
+        local ammo = self.ammoInFlight[i]
+
         if not self:isObjInsideBorder(ammo) then
             to_delete[#to_delete + 1] = i
         elseif self:updateAmmo(ammo, deltaTime) then
@@ -1446,7 +1457,9 @@ function scene:updateAmmos(deltaTime)
 
     -- Пули врагов
     local to_delete = {}
-    for i, ammo in ipairs(self.enemyAmmoInFlight) do
+    for i = 1, #self.enemyAmmoInFlight do
+        local ammo = self.enemyAmmoInFlight[i]
+
         if not self:isObjInsideBorder(ammo) then
             to_delete[#to_delete + 1] = i
         elseif hasCollidedCircle(ammo, self.player) then
@@ -1466,7 +1479,9 @@ end
 
 function scene:updateAmmoDrops(deltaTime)
     local to_delete = {}
-    for i, drop in ipairs(self.ammoDrops) do
+    for i = 1, #self.ammoDrops do
+        local drop = self.ammoDrops[i]
+
         if not self:isObjInsideBorder(drop) then
             to_delete[#to_delete + 1] = i
         elseif hasCollidedCircle(self.player, drop) then
@@ -1740,9 +1755,10 @@ function scene:destroy(event)
     audio.dispose(self.soundHeart)
     audio.dispose(self.soundExtension)
 
-    for _, sound in ipairs(self.soundGuns) do
-        audio.dispose(sound)
+    for i = 1, #self.soundGuns do
+        audio.dispose(self.soundGuns[i])
     end
+    self.soundGuns = {}
 end
 
 scene:addEventListener("create", scene)
