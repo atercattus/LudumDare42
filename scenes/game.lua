@@ -1614,7 +1614,7 @@ end
 
 function scene:setupEnemies()
     local options = {
-        width = 128,
+        width = 144,
         height = 128,
         numFrames = enemyTypeMaxValue,
     }
