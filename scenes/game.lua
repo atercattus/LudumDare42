@@ -28,6 +28,7 @@ local timerCancel = timer.cancel
 
 local composer = require('composer')
 local utils = require('utils')
+local pool = require('libs.pool')
 
 local sqr = utils.sqr
 local vectorToAngle = utils.vectorToAngle
@@ -197,17 +198,21 @@ function scene:switchGun(num)
 end
 
 function scene:ammoGet(gunType)
-    local ammo
-    if #self.ammoInCache > 0 then
-        ammo = self.ammoInCache[#self.ammoInCache]
-        tableRemove(self.ammoInCache, #self.ammoInCache)
-        ammo.isVisible = true
-    else
-        ammo = displayNewRect(0, 0, ammoWidth, ammoHeight)
-        self.levelGroup:insert(ammo)
-        ammo.name = "ammo"
-        ammo.fill = { type = "image", sheet = self.ammoImageSheet, frame = gunType }
+
+    if self.poolBullets == nil then
+        local sceneSelf = self
+        self.poolBullets = pool:new(function()
+            local ammo = displayNewRect(0, 0, ammoWidth, ammoHeight)
+            sceneSelf.levelGroup:insert(ammo)
+            ammo.name = "ammo"
+            ammo.fill = { type = "image", sheet = sceneSelf.ammoImageSheet, frame = gunType }
+
+            return ammo
+        end)
     end
+
+    local ammo = self.poolBullets:get()
+    ammo.isVisible = true
 
     ammo.gunType = gunType
     ammo.fill.frame = gunType
@@ -225,7 +230,7 @@ end
 
 function scene:ammoPut(ammo)
     ammo.isVisible = false
-    self.ammoInCache[#self.ammoInCache + 1] = ammo
+    self.poolBullets:put(ammo)
 end
 
 function scene:onKey(event)
@@ -1808,7 +1813,6 @@ function scene:reset()
     self.enemies = {}
     self.portals = {}
     self.ammoInFlight = {}
-    self.ammoInCache = {}
     self.ammoDrops = {}
     self.enemyAmmoInFlight = {}
     self.scoresText = nil
@@ -1864,6 +1868,8 @@ function scene:reset()
         end
         self.healthBars = {}
     end
+
+    self.poolBullets = nil
 end
 
 scene:addEventListener("show", function(event)
