@@ -1323,17 +1323,17 @@ function scene:explosion(posObj)
 end
 
 function scene:shotFire(posObj)
-    local shotFireSequenceData = {
-        {
-            name = "boom",
-            frames = { 1, 2 },
-            time = 50,
-            loopCount = 1,
-            loopDirection = "forward"
-        },
-    }
-
     if scene.shotImage == nil then
+        local shotFireSequenceData = {
+            {
+                name = "boom",
+                frames = { 1, 2 },
+                time = 50,
+                loopCount = 1,
+                loopDirection = "forward"
+            },
+        }
+
         scene.shotImage = display.newSprite(self.shotFireImageSheet, shotFireSequenceData)
         self.levelGroup:insert(scene.shotImage)
     end
