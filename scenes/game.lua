@@ -543,11 +543,11 @@ function scene:playerDied()
         text = scores .. "\n\nTry again!",
         width = self.W,
         font = fontName,
-        fontSize = 64,
+        fontSize = 76,
         align = 'center',
     })
     self.view:insert(gameOverText)
-    gameOverText:setFillColor(1, 1, 1)
+    gameOverText:setFillColor(1, 1, 0.6)
     gameOverText.anchorX = 0.5
     gameOverText.anchorY = 0.5
     gameOverText.x = self.W / 2
