@@ -562,10 +562,10 @@ function scene:playerDied()
     end)
 end
 
-function scene:playerGotDamage(damage)
+function scene:playerGotDamage(damage, ignoreInvul)
     local currentTime = systemGetTimer()
 
-    if self.playerInvulnBefore >= currentTime then
+    if not ignoreInvul and (self.playerInvulnBefore >= currentTime) then
         return
     end
 
@@ -1179,7 +1179,7 @@ end
 
 function scene:playerCheckCollisions()
     if not self:isObjInsideBorder(self.player, self.player.playerImage.width * mathSqrt(2)) then
-        self:playerGotDamage(damageFromBorder)
+        self:playerGotDamage(damageFromBorder, true)
         return
     end
 
