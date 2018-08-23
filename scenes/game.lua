@@ -44,7 +44,6 @@ local sinCos = utils.sinCos
 local borderRadiusSpeed = 35
 
 local damageFromPortal = 3
-local damageFromBorder = 99999
 
 local enemyAmmoWidth = 32
 local enemyAmmoHeight = 32
@@ -1179,7 +1178,7 @@ end
 
 function scene:playerCheckCollisions()
     if not self:isObjInsideBorder(self.player, self.player.playerImage.width * mathSqrt(2)) then
-        self:playerGotDamage(damageFromBorder, true)
+        self:playerGotDamage(playerMaximumHealth, true)
         return
     end
 
