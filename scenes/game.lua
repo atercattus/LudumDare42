@@ -634,6 +634,7 @@ function scene:setupPlayer()
     self.player = display.newGroup()
     self.levelGroup:insert(self.player)
     self.player.name = "player"
+    self.player.alpha = 1
 
     self.player:insert(playerImage)
     self.player.playerImage = playerImage
