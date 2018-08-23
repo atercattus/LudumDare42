@@ -83,7 +83,7 @@ local playerStandartSpeed = 550
 local enemySpawnAnimDelay = 400
 
 -- запрет на это время стрелять сразу после появления из портала
-local enemyShotFreezeAfterSpawn = 1000
+local enemyShotFreezeAfterSpawn = 1500
 
 local healthBarFrameFull = 1
 local healthBarFrameHalf = 2
@@ -583,7 +583,9 @@ function scene:playerGotDamage(damage)
 end
 
 function scene:updateBorderRadius(deltaTime)
-    self.borderRadius = self.borderRadius - borderRadiusSpeed * deltaTime
+    local speed = borderRadiusSpeed * (self.borderRadius / 1000)
+
+    self.borderRadius = self.borderRadius - speed * deltaTime
     if self.borderRadius < 0 then
         self.borderRadius = 0
     end
@@ -642,7 +644,7 @@ function scene:setupPlayer()
     self:switchGun(gunTypePistol)
 end
 
-function scene:spawnPortal(first)
+function scene:spawnPortal()
     self.portalsCreatedForAllTime = self.portalsCreatedForAllTime + 1
 
     local portal = display.newImageRect(self.levelGroup, "data/portal.png", 128, 128)
@@ -652,14 +654,10 @@ function scene:spawnPortal(first)
 
     portal.HP = portalHP
 
-    local radius = self.borderRadius * 0.8
-    if first then
-        -- в первый раз создаем портал поближе. может, и всегда так будет :)
-        radius = radius / 1.15
-    end
-
     -- выбор места под портал (чтобы не прямо рядом с игроком)
     for try = 1, 10 do -- чтобы не бесконечно место выбирать
+        local radius = self.borderRadius * mathRandom(10, 100) / 100
+
         local vec = sinCos(mathRandom(360) - 90)
         portal.x = vec[2] * radius
         portal.y = vec[1] * radius
@@ -711,7 +709,6 @@ function scene:spawnEnemy(portal)
         self.poolEnemies = pool:new(function()
             local enemy = displayNewRect(0, 0, enemyWidth, enemyHeight)
             sceneSelf.levelGroup:insert(enemy)
-            enemy.createdAt = systemGetTimer()
             enemy.name = "enemy"
             enemy.fill = { type = "image", sheet = self.enemyImageSheet, frame = enemyType }
             enemy.alpha = 1
@@ -725,6 +722,7 @@ function scene:spawnEnemy(portal)
     local enemy = self.poolEnemies:get()
     enemy.isVisible = true
     enemy.lastShotTime = 0 -- ToDo: надо бы сделать reset метод
+    enemy.createdAt = systemGetTimer()
 
     enemy.HP = enemyInfo.HPs[enemyType]
 
@@ -777,8 +775,9 @@ function scene:enemyPut(enemy)
 end
 
 function scene:portalSpawnInterval()
-    local cnt = mathMax(1, mathFloor(self.portalsCreatedForAllTime / 10))
-    return 1000 * cnt
+    local cnt = mathFloor(self.portalsCreatedForAllTime / 5)
+    cnt = mathMax(300, 1000 - cnt * 20)
+    return cnt
 end
 
 function scene:updatePortal(portal, deltaTime)
@@ -803,14 +802,18 @@ function scene:updatePortals(deltaTime)
     for i = 1, #self.portals do
         local portal = self.portals[i]
         if not self:isObjInsideBorder(portal) then
-            self:moveTo(portal, { x = 0, y = 0 }, borderRadiusSpeed, deltaTime)
+            local pos = self:calcMoveTowardsPosition({ x = 0, y = 0 }, portal, self.borderRadius)
+            portal.x = pos.x
+            portal.y = pos.y
         end
         self:updatePortal(portal, deltaTime)
     end
 end
 
 function scene:enemyShotToPlayer(enemy)
-    if (systemGetTimer() - enemy.createdAt) < (enemyShotFreezeAfterSpawn + enemySpawnAnimDelay) then
+    local currentTime = systemGetTimer()
+
+    if (currentTime - enemy.createdAt) < (enemyShotFreezeAfterSpawn + enemySpawnAnimDelay) then
         -- не стрелять в игрока сразу после появления
         return
     end
@@ -818,6 +821,24 @@ function scene:enemyShotToPlayer(enemy)
     if distanceBetween(enemy, self.player) > enemyShootMaxDistance then
         return
     end
+
+    -- Проверка на интервал между выстрелами
+    local shootInterval = 0
+    if enemy.enemyType == enemyTypeGuard then
+        shootInterval = enemyGuardShootInterval
+    elseif enemy.enemyType == enemyTypeShooter then
+        shootInterval = enemyShooterShootInterval
+    else
+        return
+    end
+
+    local lastShotTime = enemy.lastShotTime or 0
+    if lastShotTime + shootInterval > currentTime then
+        return
+    end
+    enemy.lastShotTime = currentTime
+
+    -- Непосредственно выстрел
 
     local ammo = displayNewRect(0, 0, enemyAmmoWidth, enemyAmmoHeight)
     self.levelGroup:insert(ammo)
@@ -860,12 +881,7 @@ function scene:updateEnemy(enemy, deltaTime)
 
     if enemy.enemyType == enemyTypeGuard then
         -- Стражи тоже иногда стреляют
-        local currentTime = systemGetTimer()
-        local lastShotTime = enemy.lastShotTime or 0
-        if lastShotTime + enemyGuardShootInterval < currentTime then
-            enemy.lastShotTime = currentTime
-            self:enemyShotToPlayer(enemy)
-        end
+        self:enemyShotToPlayer(enemy)
 
         -- Стражи не отходят далеко от своего портала
         local distance = distanceBetween(enemy, enemy.portal)
@@ -877,12 +893,7 @@ function scene:updateEnemy(enemy, deltaTime)
         end
     elseif enemy.enemyType == enemyTypeShooter then
         -- Стрелки стреляют. Вот так неожиданно
-        local currentTime = systemGetTimer()
-        local lastShotTime = enemy.lastShotTime or 0
-        if lastShotTime + enemyShooterShootInterval < currentTime then
-            enemy.lastShotTime = currentTime
-            self:enemyShotToPlayer(enemy)
-        end
+        self:enemyShotToPlayer(enemy)
 
         -- Стрелки стараются держаться на расстоянии
 
@@ -1099,16 +1110,12 @@ end
 
 function scene:getNewPortslsCount()
     local cnt = self.portalsCreatedForAllTime
-    if cnt <= 4 then -- первые два предполагаются учетными (с текстом на экране)
+    if cnt <= 3 then -- первые два предполагаются учебными
         return 1
-    elseif cnt <= 7 then
+    elseif cnt < 10 then
         return 2
-    elseif cnt <= 15 then
-        return 3
-    elseif cnt <= 20 then
-        return 4
     else
-        return 5
+        return mathFloor(cnt / 5)
     end
 end
 
@@ -1942,7 +1949,7 @@ scene:addEventListener("show", function(event)
 
         scene:setupPlayer()
 
-        scene:spawnPortal(true)
+        scene:spawnPortal()
 
         -- для подсчета FPS самому
         scene.renderedFrames = 0
