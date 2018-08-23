@@ -123,6 +123,7 @@ local gunsInfo = {
 }
 
 local portalHP = 20
+local portalScores = 100
 
 local enemyGuardMaxDistance = 270 -- максимальное расстояние, на которое Страж отходит от своего портала
 local enemyShooterDistance = 500 -- расстояние, на котором стрелок старается держаться от игрока
@@ -340,8 +341,12 @@ function scene:setupScores()
     self.scoresText.y = display.safeScreenOriginY
 end
 
+function scene:addScores(score)
+    self.totalScore = self.totalScore + score * self.portalsCreatedForAllTime
+end
+
 function scene:updateScores()
-    self.scoresText.text = "Portals: " .. (self.portalsCreatedForAllTime - #self.portals)
+    self.scoresText.text = "Score: " .. self.totalScore
 end
 
 function scene:updateDebug(currentTime)
@@ -639,8 +644,6 @@ end
 
 function scene:spawnPortal(first)
     self.portalsCreatedForAllTime = self.portalsCreatedForAllTime + 1
-
-    self:updateScores()
 
     local portal = display.newImageRect(self.levelGroup, "data/portal.png", 128, 128)
     portal.name = "portal"
@@ -990,7 +993,7 @@ function scene:enemyDied(enemyIdx, denyDropAmmo, playerAmmo)
         self:dropAmmo(enemy.enemyType, enemy)
     end
 
-    self.totalScore = self.totalScore + enemyInfo.damages[enemy.enemyType]
+    self:addScores(enemyInfo.damages[enemy.enemyType])
 
     local diedPos = (playerAmmo ~= nil)
             and self:calcMoveTowardsPosition(enemy, playerAmmo, -50)
@@ -1134,9 +1137,7 @@ function scene:portalDestroed(portalIdx, playerAmmo)
     portal:removeSelf()
     tableRemove(self.portals, portalIdx)
 
-    self:updateScores()
-
-    self.totalScore = self.totalScore + 100 -- да.... хардкод
+    self:addScores(portalScores)
 
     self.borderRadius = self.borderRadius + 250
     audio.play(self.soundExtension)
@@ -1952,6 +1953,15 @@ scene:addEventListener("show", function(event)
             previousFPS = scene.renderedFrames
         end, -1)
 
+        -- обновление score (чтобы не после каждого убитого обновлять текст)
+        local previousScores = scene.totalScore
+        scene.updateScoresTimer = timerPerformWithDelay(500, function()
+            if scene.totalScore ~= previousScores then
+                previousScores = scene.totalScore
+                scene:updateScores()
+            end
+        end, -1)
+
         Runtime:addEventListener("enterFrame", onEnterFrame)
         Runtime:addEventListener("key", onKey)
         Runtime:addEventListener("mouse", onMouseEvent)
@@ -1969,6 +1979,9 @@ scene:addEventListener("hide", function(event)
 
         timerCancel(scene.FPSCalcTimer)
         scene.FPSCalcTimer = nil
+
+        timerCancel(scene.updateScoresTimer)
+        scene.updateScoresTimer = nil
 
         Runtime:removeEventListener("enterFrame", onEnterFrame)
         Runtime:removeEventListener("key", onKey)
