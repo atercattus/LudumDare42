@@ -569,16 +569,15 @@ function scene:playerGotDamage(damage)
         return
     end
 
-    -- даю игроку при получении урона неуязвимость на секунду
-    self.playerInvulnBefore = currentTime + 1000
-
     self.playerHP = mathMax(0, self.playerHP - damage)
     audio.play(self.soundHit)
     self:updateHealthBar()
     if self.playerHP == 0 then
         self:playerDied()
     else
-        self:makeSomeBlood(self.player)
+        -- даю игроку при получении урона неуязвимость на секунду
+        self.playerInvulnBefore = currentTime + 1000
+        self.playerInvulnStateAt = currentTime
     end
 end
 
@@ -640,6 +639,9 @@ function scene:setupPlayer()
     self.player.playerImage = playerImage
     self.player:insert(gun)
     self.player.gun = gun
+
+    self.playerInvulnBefore = 0
+    self.playerInvulnStateAt = 0
 
     self:switchGun(gunTypePistol)
 end
@@ -1065,23 +1067,7 @@ function scene:makeSomeBlood(obj, isEnemy)
                 end
             end)
         end
-        return
     end
-
-    local bloodImage = display.newImageRect(self.levelGroup, "data/blood.png", 64, 64)
-    bloodImage.x = obj.x
-    bloodImage.y = obj.y
-    bloodImage.anchorX = 0.5
-    bloodImage.anchorY = 0.5
-
-    local scale = mathRandom(80, 120) / 100
-    bloodImage.xScale = scale
-    bloodImage.yScale = scale
-    bloodImage.rotation = mathRandom(360)
-
-    timerPerformWithDelay(100, function()
-        bloodImage:removeSelf()
-    end)
 end
 
 function scene:enemyGotDamage(enemyIdx, ammo)
@@ -1238,6 +1224,8 @@ function scene:updateHealthBar()
 end
 
 function scene:updatePlayer(deltaTime)
+    local currentTime = systemGetTimer()
+
     local dX, dY = 0, 0
 
     local isMoving = false
@@ -1276,19 +1264,28 @@ function scene:updatePlayer(deltaTime)
 
     -- направление пушки
     local vec = { x = self.mousePos.x, y = -self.mousePos.y }
-    if vec.y == 0 then
-        return
-    end
-    local angle = vectorToAngle(vec)
+    if vec.y ~= 0 then
+        local angle = vectorToAngle(vec)
 
-    if self.player.xScale < 0 then
-        angle = 360 - angle
+        if self.player.xScale < 0 then
+            angle = 360 - angle
+        end
+        self.player.gun.rotation = angle - 90
     end
-    self.player.gun.rotation = angle - 90
+
+    -- Мигание после получения урона
+    if (self.playerInvulnBefore > 0) and (self.playerInvulnBefore > currentTime) then
+        local timeInState = currentTime - self.playerInvulnStateAt
+        if timeInState >= 60 then -- частота мигания игрока при бессмертии послу получения урона
+            self.playerInvulnStateAt = currentTime
+            self.player.alpha = (self.player.alpha == 1) and 0.1 or 1
+        end
+    elseif self.player.alpha < 1 then
+        self.player.alpha = 1
+    end
 
     -- стрельба
     if self.pressedKeys.mouseLeft then
-        local currentTime = systemGetTimer()
         local delta = currentTime - gunsInfo.lastShots[self.player.gun.gunType]
         if delta >= gunsInfo.shotIntervals[self.player.gun.gunType] then
             gunsInfo.lastShots[self.player.gun.gunType] = currentTime
