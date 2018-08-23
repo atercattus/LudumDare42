@@ -1041,7 +1041,9 @@ function scene:updateEnemies(deltaTime)
         elseif not self:isObjInsideBorder(enemy) then
             if enemy.enemyType == enemyTypeGuard then
                 -- Страж не гибнет от барьера, а, как и портал, движется с ним
-                self:moveTo(enemy, { x = 0, y = 0 }, borderRadiusSpeed, deltaTime)
+                local pos = self:calcMoveTowardsPosition({ x = 0, y = 0 }, enemy, self.borderRadius)
+                enemy.x = pos.x
+                enemy.y = pos.y
             else
                 to_delete[#to_delete + 1] = i
             end
