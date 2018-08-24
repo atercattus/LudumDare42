@@ -559,6 +559,11 @@ function scene:playerDied()
         end
         return false
     end)
+
+    -- Отсылаю статистику к себе
+    local gameDuration = systemGetTimer() - self.gameStartedAt
+    local url = "https://ater.me/gamestat/?game=ld42&build=" .. gameBuildVersion .. "&score=" .. self.totalScore .. "&portals=" .. closedPortals .. "&duration=" .. gameDuration
+    network.request(url, "GET", function(ev) end)
 end
 
 function scene:playerGotDamage(damage, ignoreInvul)
@@ -1911,6 +1916,8 @@ end
 scene:addEventListener("show", function(event)
     if (event.phase == "will") then
         scene:reset()
+
+        scene.gameStartedAt = systemGetTimer()
 
         scene.soundMelody = audio.loadSound("data/melody.wav")
         scene.melodyChannel = audio.play(scene.soundMelody, { loops = -1 })
